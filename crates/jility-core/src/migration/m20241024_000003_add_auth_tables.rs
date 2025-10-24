@@ -107,12 +107,11 @@ impl MigrationTrait for Migration {
                     )
                     .col(ColumnDef::new(ApiKey::RevokedAt).timestamp_with_time_zone())
                     .foreign_key(
-                        ForeignKey::create()
+                        &mut ForeignKey::create()
                             .name("fk_api_keys_user")
                             .from(ApiKey::Table, ApiKey::UserId)
                             .to(User::Table, User::Id)
-                            .on_delete(ForeignKeyAction::Cascade)
-                            .to_owned(),
+                            .on_delete(ForeignKeyAction::Cascade),
                     )
                     .to_owned(),
             )
@@ -167,12 +166,11 @@ impl MigrationTrait for Migration {
                     )
                     .col(ColumnDef::new(Session::RevokedAt).timestamp_with_time_zone())
                     .foreign_key(
-                        ForeignKey::create()
+                        &mut ForeignKey::create()
                             .name("fk_sessions_user")
                             .from(Session::Table, Session::UserId)
                             .to(User::Table, User::Id)
-                            .on_delete(ForeignKeyAction::Cascade)
-                            .to_owned(),
+                            .on_delete(ForeignKeyAction::Cascade),
                     )
                     .to_owned(),
             )
