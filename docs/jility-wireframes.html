@@ -1,0 +1,1532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jility - Wireframes</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+            background: #fafbfc;
+            color: #0d0d0d;
+            line-height: 1.6;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: 32px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #0d0d0d;
+        }
+
+        .subtitle {
+            font-size: 16px;
+            color: #5e6c84;
+            margin-bottom: 40px;
+        }
+
+        .wireframe {
+            background: white;
+            border: 1px solid #e1e4e8;
+            border-radius: 8px;
+            margin-bottom: 60px;
+            overflow: hidden;
+        }
+
+        .wireframe-header {
+            background: #f6f8fa;
+            padding: 20px 24px;
+            border-bottom: 1px solid #e1e4e8;
+        }
+
+        .wireframe-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #0d0d0d;
+            margin-bottom: 6px;
+        }
+
+        .wireframe-description {
+            font-size: 14px;
+            color: #5e6c84;
+        }
+
+        .wireframe-content {
+            padding: 24px;
+        }
+
+        /* Navigation Bar */
+        .nav {
+            background: white;
+            border-bottom: 1px solid #e1e4e8;
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .nav-left {
+            display: flex;
+            align-items: center;
+            gap: 32px;
+        }
+
+        .logo {
+            font-size: 18px;
+            font-weight: 700;
+            color: #5e6ad2;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 24px;
+            font-size: 14px;
+        }
+
+        .nav-link {
+            color: #5e6c84;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .nav-link.active {
+            color: #0d0d0d;
+        }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .search-box {
+            background: #f6f8fa;
+            border: 1px solid #e1e4e8;
+            border-radius: 6px;
+            padding: 6px 12px;
+            font-size: 13px;
+            color: #8993a4;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .kbd {
+            background: white;
+            border: 1px solid #e1e4e8;
+            border-radius: 3px;
+            padding: 2px 6px;
+            font-size: 11px;
+            font-family: monospace;
+        }
+
+        /* Kanban Board */
+        .board {
+            display: flex;
+            gap: 16px;
+            overflow-x: auto;
+            padding: 4px;
+        }
+
+        .column {
+            min-width: 280px;
+            background: #f6f8fa;
+            border-radius: 8px;
+            padding: 12px;
+        }
+
+        .column-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            padding: 0 4px;
+        }
+
+        .column-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #5e6c84;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .column-count {
+            background: white;
+            color: #8993a4;
+            font-size: 12px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-weight: 500;
+        }
+
+        .card {
+            background: white;
+            border: 1px solid #e1e4e8;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: box-shadow 0.15s ease;
+        }
+
+        .card:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .card-id {
+            font-size: 12px;
+            color: #8993a4;
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .card-title {
+            font-size: 14px;
+            color: #0d0d0d;
+            font-weight: 500;
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        .card-meta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 12px;
+            color: #8993a4;
+        }
+
+        .card-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .badge {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .badge-backend {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .badge-frontend {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+
+        .badge-agent {
+            background: #fff3e0;
+            color: #e65100;
+        }
+
+        .badge-human {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        /* Ticket Detail */
+        .ticket-detail {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .ticket-header {
+            margin-bottom: 24px;
+        }
+
+        .ticket-id-status {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .ticket-id-large {
+            font-size: 14px;
+            color: #8993a4;
+            font-weight: 600;
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-progress {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .ticket-title-large {
+            font-size: 28px;
+            font-weight: 600;
+            color: #0d0d0d;
+            margin-bottom: 16px;
+        }
+
+        .ticket-metadata {
+            display: flex;
+            gap: 24px;
+            font-size: 14px;
+            color: #5e6c84;
+            padding: 16px 0;
+            border-top: 1px solid #e1e4e8;
+            border-bottom: 1px solid #e1e4e8;
+        }
+
+        .metadata-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .metadata-label {
+            font-size: 12px;
+            color: #8993a4;
+            font-weight: 500;
+        }
+
+        .metadata-value {
+            color: #0d0d0d;
+            font-weight: 500;
+        }
+
+        .description-section {
+            margin: 32px 0;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #0d0d0d;
+            margin-bottom: 16px;
+        }
+
+        .description-content {
+            background: #f6f8fa;
+            border: 1px solid #e1e4e8;
+            border-radius: 6px;
+            padding: 20px;
+            font-size: 14px;
+            line-height: 1.8;
+            color: #24292e;
+        }
+
+        .description-content h2 {
+            font-size: 16px;
+            margin: 20px 0 12px 0;
+            color: #0d0d0d;
+        }
+
+        .description-content h2:first-child {
+            margin-top: 0;
+        }
+
+        .description-content ul {
+            margin-left: 24px;
+            margin-bottom: 16px;
+        }
+
+        .description-content li {
+            margin-bottom: 6px;
+        }
+
+        /* Activity Timeline */
+        .activity-timeline {
+            margin-top: 32px;
+        }
+
+        .activity-item {
+            display: flex;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid #e1e4e8;
+        }
+
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+
+        .activity-icon {
+            width: 32px;
+            height: 32px;
+            background: #f6f8fa;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .activity-content {
+            flex: 1;
+        }
+
+        .activity-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+
+        .activity-author {
+            font-weight: 600;
+            color: #0d0d0d;
+            font-size: 14px;
+        }
+
+        .activity-action {
+            color: #5e6c84;
+            font-size: 14px;
+        }
+
+        .activity-time {
+            color: #8993a4;
+            font-size: 13px;
+        }
+
+        .activity-body {
+            background: #f6f8fa;
+            border-left: 2px solid #e1e4e8;
+            padding: 12px;
+            border-radius: 4px;
+            font-size: 14px;
+            color: #24292e;
+            margin-top: 8px;
+        }
+
+        /* Command Palette */
+        .command-palette-overlay {
+            background: rgba(0,0,0,0.4);
+            padding: 100px 20px;
+        }
+
+        .command-palette {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 16px 48px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .command-input {
+            border: none;
+            border-bottom: 1px solid #e1e4e8;
+            padding: 20px 24px;
+            font-size: 16px;
+            width: 100%;
+            outline: none;
+        }
+
+        .command-results {
+            padding: 8px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .command-section {
+            margin-bottom: 16px;
+        }
+
+        .command-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .command-section-title {
+            font-size: 11px;
+            font-weight: 600;
+            color: #8993a4;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 8px 12px 4px 12px;
+        }
+
+        .command-item {
+            padding: 12px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: background 0.1s ease;
+        }
+
+        .command-item:hover {
+            background: #f6f8fa;
+        }
+
+        .command-item.selected {
+            background: #5e6ad2;
+            color: white;
+        }
+
+        .command-icon {
+            font-size: 18px;
+        }
+
+        .command-text {
+            flex: 1;
+        }
+
+        .command-label {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .command-description {
+            font-size: 12px;
+            color: #8993a4;
+            margin-top: 2px;
+        }
+
+        .command-item.selected .command-description {
+            color: rgba(255,255,255,0.8);
+        }
+
+        /* Agent Dashboard */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .panel {
+            background: white;
+            border: 1px solid #e1e4e8;
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .panel-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #0d0d0d;
+        }
+
+        .agent-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .agent-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            border: 1px solid #e1e4e8;
+            border-radius: 6px;
+            transition: border-color 0.15s ease;
+        }
+
+        .agent-item:hover {
+            border-color: #5e6ad2;
+        }
+
+        .agent-status {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .agent-status.active {
+            background: #6fba1c;
+            box-shadow: 0 0 0 3px rgba(111,186,28,0.2);
+        }
+
+        .agent-status.idle {
+            background: #8993a4;
+        }
+
+        .agent-info {
+            flex: 1;
+        }
+
+        .agent-name {
+            font-weight: 600;
+            color: #0d0d0d;
+            font-size: 14px;
+        }
+
+        .agent-task {
+            font-size: 13px;
+            color: #5e6c84;
+            margin-top: 2px;
+        }
+
+        .agent-time {
+            font-size: 12px;
+            color: #8993a4;
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 16px;
+            background: #f6f8fa;
+            border-radius: 6px;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #0d0d0d;
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #8993a4;
+            font-weight: 500;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .btn-primary {
+            background: #5e6ad2;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #4c5fd5;
+        }
+
+        .btn-secondary {
+            background: #f6f8fa;
+            color: #0d0d0d;
+            border: 1px solid #e1e4e8;
+        }
+
+        .btn-secondary:hover {
+            background: #eef1f5;
+        }
+
+        .note {
+            background: #fff8e1;
+            border: 1px solid #ffe082;
+            border-radius: 6px;
+            padding: 16px;
+            margin-top: 40px;
+            font-size: 14px;
+            color: #5d4037;
+        }
+
+        .note-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .board {
+                flex-direction: column;
+            }
+
+            .column {
+                min-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚡ Jility - Wireframes</h1>
+        <p class="subtitle">AI-native project management built for speed and simplicity</p>
+
+        <!-- Main Navigation -->
+        <div class="wireframe">
+            <div class="wireframe-header">
+                <div class="wireframe-title">Navigation Bar</div>
+                <div class="wireframe-description">Clean, minimal header present across all views</div>
+            </div>
+            <div class="wireframe-content" style="padding: 0;">
+                <div class="nav">
+                    <div class="nav-left">
+                        <div class="logo">⚡ Jility</div>
+                        <div class="nav-links">
+                            <a href="#" class="nav-link active">Board</a>
+                            <a href="#" class="nav-link">Backlog</a>
+                            <a href="#" class="nav-link">Agents</a>
+                            <a href="#" class="nav-link">Activity</a>
+                        </div>
+                    </div>
+                    <div class="nav-right">
+                        <div class="search-box">
+                            🔍 Search tickets... <span class="kbd">⌘K</span>
+                        </div>
+                        <button class="btn btn-primary">+ New Ticket</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Kanban Board View -->
+        <div class="wireframe">
+            <div class="wireframe-header">
+                <div class="wireframe-title">1. Kanban Board View</div>
+                <div class="wireframe-description">Main workspace - drag and drop tickets, see live agent activity</div>
+            </div>
+            <div class="wireframe-content">
+                <div class="board">
+                    <div class="column">
+                        <div class="column-header">
+                            <div class="column-title">Backlog</div>
+                            <div class="column-count">5</div>
+                        </div>
+                        <div class="card">
+                            <div class="card-id">TASK-101</div>
+                            <div class="card-title">Create User model and migration</div>
+                            <div class="card-meta">
+                                <div class="card-meta-item">
+                                    <span>📊</span>
+                                    <span>3 pts</span>
+                                </div>
+                                <span class="badge badge-backend">backend</span>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-id">TASK-102</div>
+                            <div class="card-title">Design authentication API endpoints</div>
+                            <div class="card-meta">
+                                <div class="card-meta-item">
+                                    <span>📊</span>
+                                    <span>2 pts</span>
+                                </div>
+                                <span class="badge badge-backend">backend</span>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-id">TASK-103</div>
+                            <div class="card-title">Build login form component</div>
+                            <div class="card-meta">
+                                <div class="card-meta-item">
+                                    <span>📊</span>
+                                    <span>3 pts</span>
+                                </div>
+                                <span class="badge badge-frontend">frontend</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="column">
+                        <div class="column-header">
+                            <div class="column-title">Todo</div>
+                            <div class="column-count">2</div>
+                        </div>
+                        <div class="card">
+                            <div class="card-id">TASK-98</div>
+                            <div class="card-title">Add password hashing with bcrypt</div>
+                            <div class="card-meta">
+                                <div class="card-meta-item">
+                                    <span>📊</span>
+                                    <span>2 pts</span>
+                                </div>
+                                <span class="badge badge-backend">backend</span>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-id">TASK-99</div>
+                            <div class="card-title">Write API documentation</div>
+                            <div class="card-meta">
+                                <div class="card-meta-item">
+                                    <span>📊</span>
+                                    <span>1 pt</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="column">
+                        <div class="column-header">
+                            <div class="column-title">In Progress</div>
+                            <div class="column-count">4</div>
+                        </div>
+                        <div class="card">
+                            <div class="card-id">TASK-95</div>
+                            <div class="card-title">Implement JWT token generation</div>
+                            <div class="card-meta">
+                                <div class="card-meta-item">
+                                    <span>🤖</span>
+                                    <span>Agent-1</span>
+                                </div>
+                                <div class="card-meta-item">
+                                    <span>📊</span>
+                                    <span>3 pts</span>
+                                </div>
+                                <span class="badge badge-agent">agent</span>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-id">TASK-96</div>
+                            <div class="card-title">Add protected route middleware</div>
+                            <div class="card-meta">
+                                <div class="card-meta-item">
+                                    <span>👤</span>
+                                    <span>Alice</span>
+                                </div>
+                                <div class="card-meta-item">
+                                    <span>📊</span>
+                                    <span>2 pts</span>
+                                </div>
+                                <span class="badge badge-human">human</span>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-id">TASK-97</div>
+                            <div class="card-title">Build user settings page</div>
+                            <div class="card-meta">
+                                <div class="card-meta-item">
+                                    <span>👤</span>
+                                    <span>Bob</span>
+                                    <span>&</span>
+                                    <span>🤖</span>
+                                    <span>Agent-2</span>
+                                </div>
+                                <div class="card-meta-item">
+                                    <span>📊</span>
+                                    <span>5 pts</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="column">
+                        <div class="column-header">
+                            <div class="column-title">Review</div>
+                            <div class="column-count">1</div>
+                        </div>
+                        <div class="card">
+                            <div class="card-id">TASK-94</div>
+                            <div class="card-title">Setup database connection pool</div>
+                            <div class="card-meta">
+                                <div class="card-meta-item">
+                                    <span>✓</span>
+                                    <span>Completed</span>
+                                </div>
+                                <div class="card-meta-item">
+                                    <span>📊</span>
+                                    <span>2 pts</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="column">
+                        <div class="column-header">
+                            <div class="column-title">Done</div>
+                            <div class="column-count">12</div>
+                        </div>
+                        <div class="card">
+                            <div class="card-id">TASK-93</div>
+                            <div class="card-title">Initialize project structure</div>
+                            <div class="card-meta">
+                                <div class="card-meta-item">
+                                    <span>✓</span>
+                                    <span>Done</span>
+                                </div>
+                                <div class="card-meta-item">
+                                    <span>📊</span>
+                                    <span>1 pt</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ticket Detail View -->
+        <div class="wireframe">
+            <div class="wireframe-header">
+                <div class="wireframe-title">2. Ticket Detail View</div>
+                <div class="wireframe-description">Clean, focused view with markdown rendering and activity timeline</div>
+            </div>
+            <div class="wireframe-content">
+                <div class="ticket-detail">
+                    <div class="ticket-header">
+                        <div class="ticket-id-status">
+                            <span class="ticket-id-large">TASK-95</span>
+                            <span class="status-badge status-progress">In Progress</span>
+                        </div>
+                        <h1 class="ticket-title-large">Implement JWT token generation</h1>
+                        <div class="ticket-metadata">
+                            <div class="metadata-item">
+                                <div class="metadata-label">Assignee</div>
+                                <div class="metadata-value">🤖 Agent-1</div>
+                            </div>
+                            <div class="metadata-item">
+                                <div class="metadata-label">Story Points</div>
+                                <div class="metadata-value">3</div>
+                            </div>
+                            <div class="metadata-item">
+                                <div class="metadata-label">Created</div>
+                                <div class="metadata-value">2 hours ago</div>
+                            </div>
+                            <div class="metadata-item">
+                                <div class="metadata-label">Labels</div>
+                                <div class="metadata-value">
+                                    <span class="badge badge-backend">backend</span>
+                                    <span class="badge badge-agent">agent</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="description-section">
+                        <div class="section-title">Description</div>
+                        <div class="description-content">
+                            <h2>Context</h2>
+                            <p>This is part of the authentication system (EPIC-1). The User model was created in TASK-101, and password hashing is being implemented in TASK-98.</p>
+
+                            <h2>Objective</h2>
+                            <p>Create a service that generates JWT tokens for authenticated users. Tokens should include user ID, email, and role claims with appropriate expiration.</p>
+
+                            <h2>Files to Modify</h2>
+                            <ul>
+                                <li><code>src/services/auth.rs</code> (create)</li>
+                                <li><code>src/models/token.rs</code> (create)</li>
+                                <li><code>Cargo.toml</code> (add jsonwebtoken dependency)</li>
+                            </ul>
+
+                            <h2>Acceptance Criteria</h2>
+                            <ul>
+                                <li>✅ Generate JWT with configurable expiration</li>
+                                <li>⏳ Include user claims (id, email, role)</li>
+                                <li>⏳ Sign with RS256 algorithm</li>
+                                <li>⏳ Unit tests cover happy path and errors</li>
+                            </ul>
+
+                            <h2>Dependencies</h2>
+                            <p>Depends on TASK-101 (User model)</p>
+                        </div>
+                    </div>
+
+                    <div class="activity-timeline">
+                        <div class="section-title">💬 Activity</div>
+
+                        <div class="activity-item">
+                            <div class="activity-icon">🤖</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <span class="activity-author">Agent-1</span>
+                                    <span class="activity-action">updated description</span>
+                                    <span class="activity-time">• 12 minutes ago</span>
+                                </div>
+                                <div class="activity-body">
+                                    Added implementation progress to acceptance criteria. First criterion completed.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="activity-item">
+                            <div class="activity-icon">🔗</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <span class="activity-author">Agent-1</span>
+                                    <span class="activity-action">linked commit</span>
+                                    <span class="activity-time">• 15 minutes ago</span>
+                                </div>
+                                <div class="activity-body">
+                                    <code>abc123f</code> - Add JWT generation service with tests
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="activity-item">
+                            <div class="activity-icon">💬</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <span class="activity-author">👤 Alice</span>
+                                    <span class="activity-action">commented</span>
+                                    <span class="activity-time">• 1 hour ago</span>
+                                </div>
+                                <div class="activity-body">
+                                    Make sure to add proper error handling for expired tokens. Also check the bcrypt configuration in TASK-98.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="activity-item">
+                            <div class="activity-icon">🔄</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <span class="activity-author">👤 Alice</span>
+                                    <span class="activity-action">assigned to Agent-1</span>
+                                    <span class="activity-time">• 2 hours ago</span>
+                                </div>
+                                <div class="activity-body">
+                                    Handoff from human to agent: "I've set up the basic structure, please implement the token signing logic"
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="activity-item">
+                            <div class="activity-icon">⚡</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <span class="activity-author">👤 Alice</span>
+                                    <span class="activity-action">moved to In Progress</span>
+                                    <span class="activity-time">• 2 hours ago</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="activity-item">
+                            <div class="activity-icon">📝</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <span class="activity-author">🤖 Agent-1</span>
+                                    <span class="activity-action">created ticket</span>
+                                    <span class="activity-time">• 3 hours ago</span>
+                                </div>
+                                <div class="activity-body">
+                                    Created as part of authentication system planning (EPIC-1)
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Handoff Modal -->
+        <div class="wireframe">
+            <div class="wireframe-header">
+                <div class="wireframe-title">7. Handoff with Context</div>
+                <div class="wireframe-description">When reassigning work, humans can provide guidance to agents (and vice versa)</div>
+            </div>
+            <div class="wireframe-content">
+                <div style="max-width: 600px; margin: 0 auto;">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <div class="panel-title">Handoff TASK-95 to Agent-1</div>
+                        </div>
+                        <div style="padding: 20px;">
+                            <div style="background: #f6f8fa; border: 1px solid #e1e4e8; border-radius: 6px; padding: 16px; margin-bottom: 20px;">
+                                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                                    <span style="font-size: 24px;">👤</span>
+                                    <span style="font-size: 18px; color: #8993a4;">→</span>
+                                    <span style="font-size: 24px;">🤖</span>
+                                </div>
+                                <div style="font-size: 14px; color: #5e6c84;">
+                                    <strong>Alice</strong> → <strong>Agent-1</strong>
+                                </div>
+                            </div>
+
+                            <div style="margin-bottom: 16px;">
+                                <label style="display: block; font-size: 14px; font-weight: 600; color: #0d0d0d; margin-bottom: 8px;">
+                                    Add context for the agent (optional)
+                                </label>
+                                <textarea 
+                                    placeholder="Provide guidance, blockers, or context that will help the agent complete this task..."
+                                    style="width: 100%; min-height: 120px; padding: 12px; border: 1px solid #e1e4e8; border-radius: 6px; font-size: 14px; font-family: inherit; resize: vertical;"
+                                >I've set up the basic JWT service structure and added the dependencies to Cargo.toml. 
+
+The main work remaining is:
+1. Implement the token signing logic using RS256
+2. Add proper error handling for edge cases
+3. Make sure the expiration time is configurable
+
+Please reference the bcrypt implementation in TASK-98 for the error handling pattern we're using.
+
+Let me know if you need any clarification!</textarea>
+                            </div>
+
+                            <div style="margin-bottom: 20px;">
+                                <label style="display: flex; align-items: center; gap: 8px; font-size: 14px; color: #5e6c84; cursor: pointer;">
+                                    <input type="checkbox" checked style="width: 16px; height: 16px;">
+                                    Notify me when the agent completes this task
+                                </label>
+                            </div>
+
+                            <div style="display: flex; gap: 8px;">
+                                <button class="btn btn-primary" style="flex: 1;">Handoff Task</button>
+                                <button class="btn btn-secondary">Cancel</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 24px; background: #e3f2fd; border: 1px solid #90caf9; border-radius: 6px; padding: 16px; font-size: 13px; color: #1565c0;">
+                        <div style="font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+                            <span>ℹ️</span> How handoffs work
+                        </div>
+                        <ul style="margin-left: 20px; line-height: 1.6;">
+                            <li>Your context message will be added as a comment</li>
+                            <li>The agent will see your full message when it claims the task</li>
+                            <li>The agent can @mention you if it needs clarification</li>
+                            <li>You can reclaim the ticket at any time if needed</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Command Palette -->
+        <div class="wireframe">
+            <div class="wireframe-header">
+                <div class="wireframe-title">8. Command Palette (⌘K)</div>
+                <div class="wireframe-description">Fast keyboard-driven navigation and actions</div>
+            </div>
+            <div class="wireframe-content" style="padding: 0;">
+                <div class="command-palette-overlay">
+                    <div class="command-palette">
+                        <input type="text" class="command-input" placeholder="Type a command or search..." value="create">
+                        <div class="command-results">
+                            <div class="command-section">
+                                <div class="command-section-title">Quick Actions</div>
+                                <div class="command-item selected">
+                                    <span class="command-icon">📝</span>
+                                    <div class="command-text">
+                                        <div class="command-label">Create new ticket</div>
+                                        <div class="command-description">Add a new task to the backlog</div>
+                                    </div>
+                                    <span class="kbd">↵</span>
+                                </div>
+                                <div class="command-item">
+                                    <span class="command-icon">🚀</span>
+                                    <div class="command-text">
+                                        <div class="command-label">Create new sprint</div>
+                                        <div class="command-description">Start planning a new sprint</div>
+                                    </div>
+                                </div>
+                                <div class="command-item">
+                                    <span class="command-icon">📊</span>
+                                    <div class="command-text">
+                                        <div class="command-label">Create new epic</div>
+                                        <div class="command-description">Group related tickets together</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="command-section">
+                                <div class="command-section-title">Navigation</div>
+                                <div class="command-item">
+                                    <span class="command-icon">📋</span>
+                                    <div class="command-text">
+                                        <div class="command-label">Go to Board</div>
+                                    </div>
+                                    <span class="kbd">G</span> <span class="kbd">B</span>
+                                </div>
+                                <div class="command-item">
+                                    <span class="command-icon">🤖</span>
+                                    <div class="command-text">
+                                        <div class="command-label">Go to Agents</div>
+                                    </div>
+                                    <span class="kbd">G</span> <span class="kbd">A</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Agent Dashboard -->
+        <div class="wireframe">
+            <div class="wireframe-header">
+                <div class="wireframe-title">4. Team Status View</div>
+                <div class="wireframe-description">See who's working on what - both humans and agents together</div>
+            </div>
+            <div class="wireframe-content">
+                <div class="dashboard-grid">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <div class="panel-title">👥 Team Activity</div>
+                            <button class="btn btn-secondary">Filter</button>
+                        </div>
+                        <div class="agent-list">
+                            <div class="agent-item">
+                                <div class="agent-status active"></div>
+                                <div class="agent-info">
+                                    <div class="agent-name">👤 Alice (You)</div>
+                                    <div class="agent-task">Working on TASK-96: Add protected route middleware</div>
+                                </div>
+                                <div class="agent-time">Active 30s ago</div>
+                            </div>
+                            <div class="agent-item">
+                                <div class="agent-status active"></div>
+                                <div class="agent-info">
+                                    <div class="agent-name">🤖 Agent-1</div>
+                                    <div class="agent-task">Working on TASK-95: Implement JWT token generation</div>
+                                </div>
+                                <div class="agent-time">Active 2m ago</div>
+                            </div>
+                            <div class="agent-item">
+                                <div class="agent-status active"></div>
+                                <div class="agent-info">
+                                    <div class="agent-name">👤 Bob & 🤖 Agent-2</div>
+                                    <div class="agent-task">Pairing on TASK-97: Build user settings page</div>
+                                </div>
+                                <div class="agent-time">Active 1m ago</div>
+                            </div>
+                            <div class="agent-item">
+                                <div class="agent-status idle"></div>
+                                <div class="agent-info">
+                                    <div class="agent-name">👤 Charlie</div>
+                                    <div class="agent-task">Idle - Available for work</div>
+                                </div>
+                                <div class="agent-time">Last active 2h ago</div>
+                            </div>
+                            <div class="agent-item">
+                                <div class="agent-status idle"></div>
+                                <div class="agent-info">
+                                    <div class="agent-name">🤖 Agent-3</div>
+                                    <div class="agent-task">Idle - Available for work</div>
+                                </div>
+                                <div class="agent-time">Last active 45m ago</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="panel-header">
+                            <div class="panel-title">📊 Sprint Stats</div>
+                        </div>
+                        <div class="stat-grid">
+                            <div class="stat-item">
+                                <div class="stat-value">18</div>
+                                <div class="stat-label">Total Tickets</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">12</div>
+                                <div class="stat-label">Completed</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">4</div>
+                                <div class="stat-label">In Progress</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">67%</div>
+                                <div class="stat-label">Progress</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-header">
+                        <div class="panel-title">📈 Recent Activity</div>
+                    </div>
+                    <div class="activity-timeline">
+                        <div class="activity-item">
+                            <div class="activity-icon">💬</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <span class="activity-author">👤 Alice</span>
+                                    <span class="activity-action">commented on</span>
+                                    <span class="activity-time">TASK-95 • 5 minutes ago</span>
+                                </div>
+                                <div class="activity-body">
+                                    "@Agent-1 Make sure to handle expired tokens properly"
+                                </div>
+                            </div>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-icon">🔗</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <span class="activity-author">🤖 Agent-1</span>
+                                    <span class="activity-action">linked commit</span>
+                                    <span class="activity-time">abc123f to TASK-95 • 15 minutes ago</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-icon">✅</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <span class="activity-author">🤖 Agent-3</span>
+                                    <span class="activity-action">completed</span>
+                                    <span class="activity-time">TASK-94 • 30 minutes ago</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-icon">⚡</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <span class="activity-author">👤 Bob</span>
+                                    <span class="activity-action">claimed and paired with</span>
+                                    <span class="activity-time">🤖 Agent-2 on TASK-97 • 1 hour ago</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-icon">🔄</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <span class="activity-author">👤 Alice</span>
+                                    <span class="activity-action">reassigned</span>
+                                    <span class="activity-time">TASK-99 from Agent-2 to herself • 2 hours ago</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Assignment Selector -->
+        <div class="wireframe">
+            <div class="wireframe-header">
+                <div class="wireframe-title">5. Assignment Selector</div>
+                <div class="wireframe-description">Easy assignment to humans, agents, or both for pairing</div>
+            </div>
+            <div class="wireframe-content">
+                <div style="max-width: 400px; margin: 0 auto;">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <div class="panel-title">Assign TASK-123</div>
+                        </div>
+                        <div style="padding: 12px;">
+                            <input type="text" placeholder="Search people or agents..." style="width: 100%; padding: 8px 12px; border: 1px solid #e1e4e8; border-radius: 6px; font-size: 14px; margin-bottom: 12px;">
+                            
+                            <div style="font-size: 11px; font-weight: 600; color: #8993a4; text-transform: uppercase; letter-spacing: 0.5px; padding: 8px 4px 4px 4px;">Humans</div>
+                            <div class="agent-list">
+                                <div class="agent-item" style="cursor: pointer;">
+                                    <div class="agent-status active"></div>
+                                    <div class="agent-info">
+                                        <div class="agent-name">👤 Alice (You)</div>
+                                        <div class="agent-task" style="font-size: 12px; color: #8993a4;">Currently on TASK-96</div>
+                                    </div>
+                                </div>
+                                <div class="agent-item" style="cursor: pointer;">
+                                    <div class="agent-status active"></div>
+                                    <div class="agent-info">
+                                        <div class="agent-name">👤 Bob</div>
+                                        <div class="agent-task" style="font-size: 12px; color: #8993a4;">Currently on TASK-97</div>
+                                    </div>
+                                </div>
+                                <div class="agent-item" style="cursor: pointer;">
+                                    <div class="agent-status idle"></div>
+                                    <div class="agent-info">
+                                        <div class="agent-name">👤 Charlie</div>
+                                        <div class="agent-task" style="font-size: 12px; color: #8993a4;">Available</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="font-size: 11px; font-weight: 600; color: #8993a4; text-transform: uppercase; letter-spacing: 0.5px; padding: 12px 4px 4px 4px;">Agents</div>
+                            <div class="agent-list">
+                                <div class="agent-item" style="cursor: pointer; background: #f6f8fa;">
+                                    <div class="agent-status active"></div>
+                                    <div class="agent-info">
+                                        <div class="agent-name">🤖 Agent-1</div>
+                                        <div class="agent-task" style="font-size: 12px; color: #8993a4;">Currently on TASK-95</div>
+                                    </div>
+                                    <div style="font-size: 18px;">✓</div>
+                                </div>
+                                <div class="agent-item" style="cursor: pointer;">
+                                    <div class="agent-status active"></div>
+                                    <div class="agent-info">
+                                        <div class="agent-name">🤖 Agent-2</div>
+                                        <div class="agent-task" style="font-size: 12px; color: #8993a4;">Currently on TASK-97 with Bob</div>
+                                    </div>
+                                </div>
+                                <div class="agent-item" style="cursor: pointer;">
+                                    <div class="agent-status idle"></div>
+                                    <div class="agent-info">
+                                        <div class="agent-name">🤖 Agent-3</div>
+                                        <div class="agent-task" style="font-size: 12px; color: #8993a4;">Available</div>
+                                    </div>
+                                </div>
+                                <div class="agent-item" style="cursor: pointer;">
+                                    <div class="agent-status idle"></div>
+                                    <div class="agent-info">
+                                        <div class="agent-name">🤖 Claude Code</div>
+                                        <div class="agent-task" style="font-size: 12px; color: #8993a4;">Available</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="border-top: 1px solid #e1e4e8; margin: 12px -12px 0 -12px; padding: 12px;">
+                                <div class="agent-item" style="cursor: pointer;">
+                                    <div style="width: 32px; height: 32px; background: #f6f8fa; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px;">⭕</div>
+                                    <div class="agent-info">
+                                        <div class="agent-name">Unassigned</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="margin-top: 16px; display: flex; gap: 8px;">
+                                <button class="btn btn-primary" style="flex: 1;">Assign</button>
+                                <button class="btn btn-secondary">Cancel</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 24px; background: #f6f8fa; border: 1px solid #e1e4e8; border-radius: 6px; padding: 12px; font-size: 13px; color: #5e6c84;">
+                        <div style="font-weight: 600; margin-bottom: 6px;">💡 Pro tip:</div>
+                        Select multiple people to pair on a ticket together. Great for human + agent collaboration!
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Agent Dashboard -->
+        <div class="wireframe">
+            <div class="wireframe-header">
+                <div class="wireframe-title">6. Agent Monitoring Dashboard</div>
+                <div class="wireframe-description">Deep dive into agent performance and activity patterns</div>
+            </div>
+            <div class="wireframe-content">
+                <div class="dashboard-grid">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <div class="panel-title">🤖 Active Agents</div>
+                            <button class="btn btn-secondary">Configure</button>
+                        </div>
+                        <div class="agent-list">
+                            <div class="agent-item">
+                                <div class="agent-status active"></div>
+                                <div class="agent-info">
+                                    <div class="agent-name">Agent-1</div>
+                                    <div class="agent-task">Working on TASK-95: Implement JWT token generation</div>
+                                </div>
+                                <div class="agent-time">Active 2m ago</div>
+                            </div>
+                            <div class="agent-item">
+                                <div class="agent-status active"></div>
+                                <div class="agent-info">
+                                    <div class="agent-name">Agent-2</div>
+                                    <div class="agent-task">Working on TASK-96: Add protected route middleware</div>
+                                </div>
+                                <div class="agent-time">Active 5m ago</div>
+                            </div>
+                            <div class="agent-item">
+                                <div class="agent-status idle"></div>
+                                <div class="agent-info">
+                                    <div class="agent-name">Agent-3</div>
+                                    <div class="agent-task">Idle - Available for work</div>
+                                </div>
+                                <div class="agent-time">Last active 1h ago</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="panel-header">
+                            <div class="panel-title">📊 Sprint Stats</div>
+                        </div>
+                        <div class="stat-grid">
+                            <div class="stat-item">
+                                <div class="stat-value">18</div>
+                                <div class="stat-label">Total Tickets</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">12</div>
+                                <div class="stat-label">Completed</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">3</div>
+                                <div class="stat-label">In Progress</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">67%</div>
+                                <div class="stat-label">Progress</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-header">
+                        <div class="panel-title">📈 Recent Activity</div>
+                    </div>
+                    <div class="activity-timeline">
+                        <div class="activity-item">
+                            <div class="activity-icon">✅</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <span class="activity-author">Agent-3</span>
+                                    <span class="activity-action">completed</span>
+                                    <span class="activity-time">TASK-94 • 30 minutes ago</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-icon">🔗</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <span class="activity-author">Agent-1</span>
+                                    <span class="activity-action">linked commit</span>
+                                    <span class="activity-time">abc123f to TASK-95 • 45 minutes ago</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-icon">⚡</div>
+                            <div class="activity-content">
+                                <div class="activity-header">
+                                    <span class="activity-author">Agent-2</span>
+                                    <span class="activity-action">started</span>
+                                    <span class="activity-time">TASK-96 • 1 hour ago</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="note">
+            <div class="note-title">Design Philosophy</div>
+            <ul style="margin-left: 20px; margin-top: 8px;">
+                <li><strong>Speed First:</strong> Every interaction should feel instant. No loading spinners for common actions.</li>
+                <li><strong>Keyboard-Driven:</strong> Power users should rarely need to touch the mouse.</li>
+                <li><strong>Progressive Disclosure:</strong> Show simple by default, reveal complexity only when needed.</li>
+                <li><strong>Agent-Aware:</strong> The UI should clearly distinguish agent activity from human activity.</li>
+                <li><strong>Mobile-Friendly:</strong> Essential features work perfectly on mobile devices.</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>
