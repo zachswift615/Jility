@@ -17,6 +17,55 @@ FRONTEND_PORT=3901
 BACKEND_PID="/tmp/jility-backend.pid"
 FRONTEND_PID="/tmp/jility-frontend.pid"
 
+# Kill process on port
+kill_port() {
+    local port=$1
+    local pid=$(lsof -ti:$port 2>/dev/null)
+
+    if [ -n "$pid" ]; then
+        echo -e "${YELLOW}🧹 Killing process on port $port (PID: $pid)${NC}"
+        kill -TERM $pid 2>/dev/null || true
+        sleep 1
+        # Force kill if still running
+        if kill -0 $pid 2>/dev/null; then
+            kill -KILL $pid 2>/dev/null || true
+        fi
+        echo -e "${GREEN}✓ Process on port $port stopped${NC}"
+        return 0
+    else
+        echo -e "${BLUE}ℹ No process running on port $port${NC}"
+        return 1
+    fi
+}
+
+# Check if port is in use
+is_port_in_use() {
+    local port=$1
+    lsof -ti:$port >/dev/null 2>&1
+}
+
+# Check prerequisites
+check_prerequisites() {
+    if ! command -v cargo &> /dev/null; then
+        echo -e "${RED}Error: cargo not found. Install Rust toolchain.${NC}"
+        exit 1
+    fi
+
+    if ! command -v npm &> /dev/null; then
+        echo -e "${RED}Error: npm not found. Install Node.js.${NC}"
+        exit 1
+    fi
+}
+
+# Prefix output with color
+prefix_output() {
+    local prefix=$1
+    local color=$2
+    while IFS= read -r line; do
+        echo -e "${color}[${prefix}]${NC} ${line}"
+    done
+}
+
 # Show usage
 usage() {
     echo "Usage: $0 {start|stop|restart|status}"
@@ -45,7 +94,30 @@ case "$1" in
         echo "Restart command - to be implemented"
         ;;
     status)
-        echo "Status command - to be implemented"
+        echo "🔍 Checking server status..."
+
+        backend_running=0
+        frontend_running=0
+
+        if is_port_in_use $BACKEND_PORT; then
+            echo -e "${GREEN}✓ Backend running on port $BACKEND_PORT${NC}"
+            backend_running=1
+        else
+            echo -e "${RED}✗ Backend not running${NC}"
+        fi
+
+        if is_port_in_use $FRONTEND_PORT; then
+            echo -e "${GREEN}✓ Frontend running on port $FRONTEND_PORT${NC}"
+            frontend_running=1
+        else
+            echo -e "${RED}✗ Frontend not running${NC}"
+        fi
+
+        if [ $backend_running -eq 1 ] && [ $frontend_running -eq 1 ]; then
+            exit 0
+        else
+            exit 1
+        fi
         ;;
     *)
         usage
