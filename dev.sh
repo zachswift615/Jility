@@ -88,7 +88,33 @@ case "$1" in
         echo "Start command - to be implemented"
         ;;
     stop)
-        echo "Stop command - to be implemented"
+        echo "🛑 Stopping servers..."
+
+        # Stop backend
+        if [ -f "$BACKEND_PID" ]; then
+            pid=$(cat "$BACKEND_PID")
+            if kill -0 $pid 2>/dev/null; then
+                kill -TERM $pid 2>/dev/null || true
+                rm -f "$BACKEND_PID"
+                echo -e "${GREEN}✓ Backend stopped${NC}"
+            fi
+        fi
+
+        # Stop frontend
+        if [ -f "$FRONTEND_PID" ]; then
+            pid=$(cat "$FRONTEND_PID")
+            if kill -0 $pid 2>/dev/null; then
+                kill -TERM $pid 2>/dev/null || true
+                rm -f "$FRONTEND_PID"
+                echo -e "${GREEN}✓ Frontend stopped${NC}"
+            fi
+        fi
+
+        # Also try to kill by port (fallback)
+        kill_port $BACKEND_PORT || true
+        kill_port $FRONTEND_PORT || true
+
+        echo -e "${GREEN}✅ All servers stopped${NC}"
         ;;
     restart)
         echo "Restart command - to be implemented"
