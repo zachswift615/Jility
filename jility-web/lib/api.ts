@@ -8,9 +8,20 @@ import type {
   TicketFilters,
   LinkedCommit,
   TicketChange,
+  SearchFilters,
+  SearchResponse,
+  SavedView,
+  CreateSavedViewRequest,
+  UpdateSavedViewRequest,
 } from './types'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api'
+
+function getAuthHeaders(): Record<string, string> {
+  if (typeof window === 'undefined') return {}
+  const token = localStorage.getItem('jility_token')
+  return token ? { Authorization: `Bearer ${token}` } : {}
+}
 
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
@@ -30,7 +41,10 @@ export const api = {
   createProject: async (data: { name: string; description?: string }): Promise<Project> => {
     const res = await fetch(`${API_BASE}/projects`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeaders(),
+      },
       body: JSON.stringify(data),
     })
     return handleResponse<Project>(res)
@@ -60,7 +74,10 @@ export const api = {
   createTicket: async (ticket: CreateTicketRequest): Promise<Ticket> => {
     const res = await fetch(`${API_BASE}/tickets`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeaders(),
+      },
       body: JSON.stringify(ticket),
     })
     return handleResponse<Ticket>(res)
@@ -69,7 +86,10 @@ export const api = {
   updateTicket: async (id: string, data: UpdateTicketRequest): Promise<Ticket> => {
     const res = await fetch(`${API_BASE}/tickets/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeaders(),
+      },
       body: JSON.stringify(data),
     })
     return handleResponse<Ticket>(res)
@@ -198,5 +218,112 @@ export const api = {
 
     const res = await fetch(`${API_BASE}/search?${params}`)
     return handleResponse<Ticket[]>(res)
+  },
+
+  // Advanced search
+  advancedSearch: async (filters: SearchFilters): Promise<SearchResponse> => {
+    const params = new URLSearchParams({ q: filters.q })
+
+    if (filters.status) filters.status.forEach(s => params.append('status', s))
+    if (filters.assignees) filters.assignees.forEach(a => params.append('assignees', a))
+    if (filters.labels) filters.labels.forEach(l => params.append('labels', l))
+    if (filters.created_by) params.append('created_by', filters.created_by)
+    if (filters.created_after) params.append('created_after', filters.created_after)
+    if (filters.created_before) params.append('created_before', filters.created_before)
+    if (filters.updated_after) params.append('updated_after', filters.updated_after)
+    if (filters.updated_before) params.append('updated_before', filters.updated_before)
+    if (filters.min_points) params.append('min_points', filters.min_points.toString())
+    if (filters.max_points) params.append('max_points', filters.max_points.toString())
+    if (filters.has_comments !== undefined) params.append('has_comments', filters.has_comments.toString())
+    if (filters.has_commits !== undefined) params.append('has_commits', filters.has_commits.toString())
+    if (filters.has_dependencies !== undefined) params.append('has_dependencies', filters.has_dependencies.toString())
+    if (filters.epic_id) params.append('epic_id', filters.epic_id)
+    if (filters.parent_id) params.append('parent_id', filters.parent_id)
+    if (filters.project_id) params.append('project_id', filters.project_id)
+    if (filters.search_in) filters.search_in.forEach(s => params.append('search_in', s))
+    if (filters.limit) params.append('limit', filters.limit.toString())
+    if (filters.offset) params.append('offset', filters.offset.toString())
+
+    const res = await fetch(`${API_BASE}/search?${params}`)
+    return handleResponse<SearchResponse>(res)
+  },
+
+  // Saved views
+  listSavedViews: async (): Promise<SavedView[]> => {
+    const res = await fetch(`${API_BASE}/search/views`)
+    return handleResponse<SavedView[]>(res)
+  },
+
+  getSavedView: async (id: string): Promise<SavedView> => {
+    const res = await fetch(`${API_BASE}/search/views/${id}`)
+    return handleResponse<SavedView>(res)
+  },
+
+  createSavedView: async (data: CreateSavedViewRequest): Promise<SavedView> => {
+    const res = await fetch(`${API_BASE}/search/views`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    })
+    return handleResponse<SavedView>(res)
+  },
+
+  updateSavedView: async (id: string, data: UpdateSavedViewRequest): Promise<SavedView> => {
+    const res = await fetch(`${API_BASE}/search/views/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    })
+    return handleResponse<SavedView>(res)
+  },
+
+  deleteSavedView: async (id: string): Promise<{ message: string }> => {
+    const res = await fetch(`${API_BASE}/search/views/${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    })
+    return handleResponse<{ message: string }>(res)
+  },
+
+  // Auth & Profile
+  getCurrentUser: async (): Promise<any> => {
+    const res = await fetch(`${API_BASE}/auth/me`, {
+      headers: getAuthHeaders(),
+    })
+    return handleResponse<any>(res)
+  },
+
+  createApiKey: async (data: { name: string; scopes: string[]; expires_in_days?: number }): Promise<any> => {
+    const res = await fetch(`${API_BASE}/auth/api-keys`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeaders(),
+      },
+      body: JSON.stringify(data),
+    })
+    return handleResponse<any>(res)
+  },
+
+  listApiKeys: async (): Promise<any[]> => {
+    const res = await fetch(`${API_BASE}/auth/api-keys`, {
+      headers: getAuthHeaders(),
+    })
+    return handleResponse<any[]>(res)
+  },
+
+  revokeApiKey: async (id: string): Promise<{ success: boolean }> => {
+    const res = await fetch(`${API_BASE}/auth/api-keys/${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    })
+    return handleResponse<{ success: boolean }>(res)
+  },
+
+  listSessions: async (): Promise<any[]> => {
+    const res = await fetch(`${API_BASE}/auth/sessions`, {
+      headers: getAuthHeaders(),
+    })
+    return handleResponse<any[]>(res)
   },
 }

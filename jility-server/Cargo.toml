@@ -43,3 +43,9 @@ tracing-subscriber.workspace = true
 
 # HTTP
 http = "1.0"
+
+# Authentication
+bcrypt = "0.15"
+jsonwebtoken = "9.2"
+rand = "0.8"
+sha2 = "0.10"

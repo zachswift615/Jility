@@ -1,61 +1,289 @@
-use axum::{extract::{Query, State}, Json};
-use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
+use axum::{
+    extract::{Path, Query, State},
+    Json,
+};
+use chrono::Utc;
+use jility_core::{
+    entities::{saved_view, SavedView},
+    search::{SearchFilters, SearchResponse as CoreSearchResponse},
+    ActiveModelTrait, ActiveValue, EntityTrait,
+};
+use sea_orm::ColumnTrait;
+use sea_orm::QueryFilter;
+use uuid::Uuid;
 
 use crate::{
+    auth::Claims,
     error::{ApiError, ApiResult},
-    models::{SearchQuery, TicketResponse},
+    models::{
+        CreateSavedViewRequest, SavedViewResponse, SearchQuery, UpdateSavedViewRequest,
+    },
     state::AppState,
 };
-use jility_core::entities::{ticket, ticket_assignee, ticket_label, Ticket, TicketAssignee, TicketLabel};
 
+/// Search tickets with full-text search and advanced filters
 pub async fn search_tickets(
     State(state): State<AppState>,
+    _claims: Claims,
     Query(query): Query<SearchQuery>,
-) -> ApiResult<Json<Vec<TicketResponse>>> {
-    // Simple search - just search in title for now
-    // TODO: Implement full-text search with FTS5 or similar
-    let tickets = Ticket::find()
-        .filter(ticket::Column::Title.contains(&query.q))
+) -> ApiResult<Json<CoreSearchResponse>> {
+    // Parse date filters
+    let created_after = query
+        .created_after
+        .and_then(|s| chrono::DateTime::parse_from_rfc3339(&s).ok())
+        .map(|dt| dt.with_timezone(&Utc));
+
+    let created_before = query
+        .created_before
+        .and_then(|s| chrono::DateTime::parse_from_rfc3339(&s).ok())
+        .map(|dt| dt.with_timezone(&Utc));
+
+    let updated_after = query
+        .updated_after
+        .and_then(|s| chrono::DateTime::parse_from_rfc3339(&s).ok())
+        .map(|dt| dt.with_timezone(&Utc));
+
+    let updated_before = query
+        .updated_before
+        .and_then(|s| chrono::DateTime::parse_from_rfc3339(&s).ok())
+        .map(|dt| dt.with_timezone(&Utc));
+
+    // Build search filters
+    let filters = SearchFilters {
+        query: query.q,
+        status: if query.status.is_empty() {
+            None
+        } else {
+            Some(query.status)
+        },
+        assignees: if query.assignees.is_empty() {
+            None
+        } else {
+            Some(query.assignees)
+        },
+        labels: if query.labels.is_empty() {
+            None
+        } else {
+            Some(query.labels)
+        },
+        created_by: query.created_by,
+        created_after,
+        created_before,
+        updated_after,
+        updated_before,
+        min_points: query.min_points,
+        max_points: query.max_points,
+        has_comments: query.has_comments,
+        has_commits: query.has_commits,
+        has_dependencies: query.has_dependencies,
+        epic_id: query.epic_id,
+        parent_id: query.parent_id,
+        project_id: query.project_id,
+        search_in: if query.search_in.is_empty() {
+            vec![
+                "title".to_string(),
+                "description".to_string(),
+                "comments".to_string(),
+            ]
+        } else {
+            query.search_in
+        },
+    };
+
+    // Execute search
+    let response = state
+        .search_service
+        .search_tickets(filters, query.limit, query.offset)
+        .await
+        .map_err(ApiError::from)?;
+
+    Ok(Json(response))
+}
+
+/// Get all saved views for the current user
+pub async fn list_saved_views(
+    State(state): State<AppState>,
+    claims: Claims,
+) -> ApiResult<Json<Vec<SavedViewResponse>>> {
+    let views = SavedView::find()
+        .filter(saved_view::Column::UserId.eq(&claims.sub))
         .all(state.db.as_ref())
         .await
         .map_err(ApiError::from)?;
 
-    let mut responses = Vec::new();
-    for ticket in tickets {
-        let assignees = TicketAssignee::find()
-            .filter(ticket_assignee::Column::TicketId.eq(ticket.id))
-            .all(state.db.as_ref())
-            .await
-            .map_err(ApiError::from)?
-            .into_iter()
-            .map(|a| a.assignee)
-            .collect();
-
-        let labels = TicketLabel::find()
-            .filter(ticket_label::Column::TicketId.eq(ticket.id))
-            .all(state.db.as_ref())
-            .await
-            .map_err(ApiError::from)?
-            .into_iter()
-            .map(|l| l.label)
-            .collect();
-
-        responses.push(TicketResponse {
-            id: ticket.id.to_string(),
-            number: format!("TASK-{}", ticket.ticket_number),
-            title: ticket.title,
-            description: ticket.description,
-            status: ticket.status,
-            story_points: ticket.story_points,
-            assignees,
-            labels,
-            created_at: ticket.created_at.to_rfc3339(),
-            updated_at: ticket.updated_at.to_rfc3339(),
-            created_by: ticket.created_by,
-            parent_id: ticket.parent_id.map(|id| id.to_string()),
-            epic_id: ticket.epic_id.map(|id| id.to_string()),
-        });
-    }
+    let responses: Vec<SavedViewResponse> = views
+        .into_iter()
+        .map(|view| SavedViewResponse {
+            id: view.id.to_string(),
+            user_id: view.user_id,
+            name: view.name,
+            description: view.description,
+            filters: serde_json::from_str(&view.filters).unwrap_or(serde_json::json!({})),
+            is_default: view.is_default,
+            is_shared: view.is_shared,
+            created_at: view.created_at.to_rfc3339(),
+            updated_at: view.updated_at.to_rfc3339(),
+        })
+        .collect();
 
     Ok(Json(responses))
+}
+
+/// Get a specific saved view
+pub async fn get_saved_view(
+    State(state): State<AppState>,
+    claims: Claims,
+    Path(id): Path<Uuid>,
+) -> ApiResult<Json<SavedViewResponse>> {
+    let view = SavedView::find_by_id(id)
+        .one(state.db.as_ref())
+        .await
+        .map_err(ApiError::from)?
+        .ok_or_else(|| ApiError::NotFound("Saved view not found".to_string()))?;
+
+    // Check if user owns this view or if it's shared
+    if view.user_id != claims.sub && !view.is_shared {
+        return Err(ApiError::Forbidden(
+            "You don't have permission to view this saved view".to_string(),
+        ));
+    }
+
+    Ok(Json(SavedViewResponse {
+        id: view.id.to_string(),
+        user_id: view.user_id,
+        name: view.name,
+        description: view.description,
+        filters: serde_json::from_str(&view.filters).unwrap_or(serde_json::json!({})),
+        is_default: view.is_default,
+        is_shared: view.is_shared,
+        created_at: view.created_at.to_rfc3339(),
+        updated_at: view.updated_at.to_rfc3339(),
+    }))
+}
+
+/// Create a new saved view
+pub async fn create_saved_view(
+    State(state): State<AppState>,
+    claims: Claims,
+    Json(req): Json<CreateSavedViewRequest>,
+) -> ApiResult<Json<SavedViewResponse>> {
+    let now = Utc::now();
+    let id = Uuid::new_v4();
+
+    let view = saved_view::ActiveModel {
+        id: ActiveValue::Set(id),
+        user_id: ActiveValue::Set(claims.sub.clone()),
+        name: ActiveValue::Set(req.name),
+        description: ActiveValue::Set(req.description),
+        filters: ActiveValue::Set(req.filters.to_string()),
+        is_default: ActiveValue::Set(req.is_default.unwrap_or(false)),
+        is_shared: ActiveValue::Set(req.is_shared.unwrap_or(false)),
+        created_at: ActiveValue::Set(now),
+        updated_at: ActiveValue::Set(now),
+    };
+
+    let view = view
+        .insert(state.db.as_ref())
+        .await
+        .map_err(ApiError::from)?;
+
+    Ok(Json(SavedViewResponse {
+        id: view.id.to_string(),
+        user_id: view.user_id,
+        name: view.name,
+        description: view.description,
+        filters: serde_json::from_str(&view.filters).unwrap_or(serde_json::json!({})),
+        is_default: view.is_default,
+        is_shared: view.is_shared,
+        created_at: view.created_at.to_rfc3339(),
+        updated_at: view.updated_at.to_rfc3339(),
+    }))
+}
+
+/// Update a saved view
+pub async fn update_saved_view(
+    State(state): State<AppState>,
+    claims: Claims,
+    Path(id): Path<Uuid>,
+    Json(req): Json<UpdateSavedViewRequest>,
+) -> ApiResult<Json<SavedViewResponse>> {
+    let view = SavedView::find_by_id(id)
+        .one(state.db.as_ref())
+        .await
+        .map_err(ApiError::from)?
+        .ok_or_else(|| ApiError::NotFound("Saved view not found".to_string()))?;
+
+    // Only owner can update
+    if view.user_id != claims.sub {
+        return Err(ApiError::Forbidden(
+            "You don't have permission to update this saved view".to_string(),
+        ));
+    }
+
+    let mut active_view: saved_view::ActiveModel = view.into();
+
+    if let Some(name) = req.name {
+        active_view.name = ActiveValue::Set(name);
+    }
+    if let Some(description) = req.description {
+        active_view.description = ActiveValue::Set(Some(description));
+    }
+    if let Some(filters) = req.filters {
+        active_view.filters = ActiveValue::Set(filters.to_string());
+    }
+    if let Some(is_default) = req.is_default {
+        active_view.is_default = ActiveValue::Set(is_default);
+    }
+    if let Some(is_shared) = req.is_shared {
+        active_view.is_shared = ActiveValue::Set(is_shared);
+    }
+
+    active_view.updated_at = ActiveValue::Set(Utc::now());
+
+    let view = active_view
+        .update(state.db.as_ref())
+        .await
+        .map_err(ApiError::from)?;
+
+    Ok(Json(SavedViewResponse {
+        id: view.id.to_string(),
+        user_id: view.user_id,
+        name: view.name,
+        description: view.description,
+        filters: serde_json::from_str(&view.filters).unwrap_or(serde_json::json!({})),
+        is_default: view.is_default,
+        is_shared: view.is_shared,
+        created_at: view.created_at.to_rfc3339(),
+        updated_at: view.updated_at.to_rfc3339(),
+    }))
+}
+
+/// Delete a saved view
+pub async fn delete_saved_view(
+    State(state): State<AppState>,
+    claims: Claims,
+    Path(id): Path<Uuid>,
+) -> ApiResult<Json<serde_json::Value>> {
+    let view = SavedView::find_by_id(id)
+        .one(state.db.as_ref())
+        .await
+        .map_err(ApiError::from)?
+        .ok_or_else(|| ApiError::NotFound("Saved view not found".to_string()))?;
+
+    // Only owner can delete
+    if view.user_id != claims.sub {
+        return Err(ApiError::Forbidden(
+            "You don't have permission to delete this saved view".to_string(),
+        ));
+    }
+
+    let active_view: saved_view::ActiveModel = view.into();
+    active_view
+        .delete(state.db.as_ref())
+        .await
+        .map_err(ApiError::from)?;
+
+    Ok(Json(serde_json::json!({
+        "message": "Saved view deleted successfully"
+    })))
 }

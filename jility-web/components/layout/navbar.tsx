@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { ThemeSwitcher } from '@/components/theme-switcher'
 import { CommandPalette } from '@/components/command-palette'
-import { Layers, BarChart3, Boxes } from 'lucide-react'
+import { Layers, BarChart3, Boxes, Calendar, Activity, Clock } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export function Navbar() {
@@ -12,6 +12,9 @@ export function Navbar() {
 
   const links = [
     { href: '/board', label: 'Board', icon: Layers },
+    { href: '/sprint/planning', label: 'Sprint Planning', icon: Calendar },
+    { href: '/sprint/active', label: 'Active Sprint', icon: Activity },
+    { href: '/sprint/history', label: 'History', icon: Clock },
     { href: '/agents', label: 'Agents', icon: Boxes },
   ]
 

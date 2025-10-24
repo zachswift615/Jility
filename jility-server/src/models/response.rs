@@ -128,3 +128,77 @@ pub fn format_uuid(uuid: &Uuid) -> String {
 pub fn format_datetime(dt: &DateTime<Utc>) -> String {
     dt.to_rfc3339()
 }
+
+// Sprint responses
+#[derive(Debug, Serialize, Clone)]
+pub struct SprintResponse {
+    pub id: String,
+    pub project_id: String,
+    pub name: String,
+    pub goal: Option<String>,
+    pub status: String,
+    pub start_date: Option<String>,
+    pub end_date: Option<String>,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct SprintDetailsResponse {
+    pub sprint: SprintResponse,
+    pub tickets: Vec<TicketResponse>,
+    pub stats: SprintStats,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct SprintStats {
+    pub total_tickets: usize,
+    pub total_points: i32,
+    pub completed_tickets: usize,
+    pub completed_points: i32,
+    pub in_progress_tickets: usize,
+    pub in_progress_points: i32,
+    pub todo_tickets: usize,
+    pub todo_points: i32,
+    pub completion_percentage: f64,
+}
+
+#[derive(Debug, Serialize)]
+pub struct BurndownDataPoint {
+    pub date: String,
+    pub ideal: i32,
+    pub actual: i32,
+}
+
+#[derive(Debug, Serialize)]
+pub struct BurndownData {
+    pub sprint_id: String,
+    pub data_points: Vec<BurndownDataPoint>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct VelocityData {
+    pub sprint_name: String,
+    pub completed_points: i32,
+}
+
+#[derive(Debug, Serialize)]
+pub struct SprintHistoryResponse {
+    pub sprints: Vec<SprintResponse>,
+    pub velocity_data: Vec<VelocityData>,
+    pub average_velocity: f64,
+}
+
+// Saved view responses
+#[derive(Debug, Serialize)]
+pub struct SavedViewResponse {
+    pub id: String,
+    pub user_id: String,
+    pub name: String,
+    pub description: Option<String>,
+    pub filters: serde_json::Value,
+    pub is_default: bool,
+    pub is_shared: bool,
+    pub created_at: String,
+    pub updated_at: String,
+}

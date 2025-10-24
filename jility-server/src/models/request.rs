@@ -79,5 +79,90 @@ pub struct LinkCommitRequest {
 #[derive(Debug, Deserialize)]
 pub struct SearchQuery {
     pub q: String,
-    pub limit: Option<u64>,
+
+    #[serde(default)]
+    pub status: Vec<String>,
+
+    #[serde(default)]
+    pub assignees: Vec<String>,
+
+    #[serde(default)]
+    pub labels: Vec<String>,
+
+    pub created_by: Option<String>,
+    pub created_after: Option<String>,
+    pub created_before: Option<String>,
+    pub updated_after: Option<String>,
+    pub updated_before: Option<String>,
+
+    pub min_points: Option<i32>,
+    pub max_points: Option<i32>,
+
+    pub has_comments: Option<bool>,
+    pub has_commits: Option<bool>,
+    pub has_dependencies: Option<bool>,
+
+    pub epic_id: Option<Uuid>,
+    pub parent_id: Option<Uuid>,
+    pub project_id: Option<Uuid>,
+
+    #[serde(default)]
+    pub search_in: Vec<String>,
+
+    #[serde(default = "default_limit")]
+    pub limit: u64,
+
+    #[serde(default)]
+    pub offset: u64,
+}
+
+fn default_limit() -> u64 {
+    20
+}
+
+// Saved view requests
+#[derive(Debug, Deserialize)]
+pub struct CreateSavedViewRequest {
+    pub name: String,
+    pub description: Option<String>,
+    pub filters: serde_json::Value,
+    pub is_default: Option<bool>,
+    pub is_shared: Option<bool>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct UpdateSavedViewRequest {
+    pub name: Option<String>,
+    pub description: Option<String>,
+    pub filters: Option<serde_json::Value>,
+    pub is_default: Option<bool>,
+    pub is_shared: Option<bool>,
+}
+
+// Sprint requests
+#[derive(Debug, Deserialize)]
+pub struct CreateSprintRequest {
+    pub name: String,
+    pub goal: Option<String>,
+    pub start_date: Option<String>, // ISO 8601 format
+    pub end_date: Option<String>,   // ISO 8601 format
+}
+
+#[derive(Debug, Deserialize)]
+pub struct UpdateSprintRequest {
+    pub name: Option<String>,
+    pub goal: Option<String>,
+    pub start_date: Option<String>,
+    pub end_date: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct StartSprintRequest {
+    pub start_date: String,
+    pub end_date: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct AddTicketToSprintRequest {
+    pub added_by: String,
 }
