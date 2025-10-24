@@ -97,6 +97,9 @@ case "$1" in
                 kill -TERM $pid 2>/dev/null || true
                 rm -f "$BACKEND_PID"
                 echo -e "${GREEN}✓ Backend stopped${NC}"
+            else
+                # Process not running, clean up stale PID file
+                rm -f "$BACKEND_PID"
             fi
         fi
 
@@ -107,6 +110,9 @@ case "$1" in
                 kill -TERM $pid 2>/dev/null || true
                 rm -f "$FRONTEND_PID"
                 echo -e "${GREEN}✓ Frontend stopped${NC}"
+            else
+                # Process not running, clean up stale PID file
+                rm -f "$FRONTEND_PID"
             fi
         fi
 
