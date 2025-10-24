@@ -16,7 +16,7 @@ use crate::{
     state::AppState,
 };
 use jility_core::entities::{
-    ticket, ticket_assignee, ticket_label, ticket_change, comment, commit_link,
+    ticket, ticket_assignee, ticket_label, ticket_change, comment, commit_link, ticket_dependency,
     Ticket, TicketAssignee, TicketLabel, TicketChange, Comment, CommitLink,
     TicketDependency, TicketStatus, ChangeType,
 };
@@ -291,7 +291,7 @@ pub async fn get_ticket(
 
     // Get dependencies
     let dependencies = TicketDependency::find()
-        .filter(ticket_assignee::Column::TicketId.eq(ticket_id))
+        .filter(ticket_dependency::Column::TicketId.eq(ticket_id))
         .all(state.db.as_ref())
         .await
         .map_err(ApiError::from)?;
@@ -314,7 +314,7 @@ pub async fn get_ticket(
 
     // Get dependents (tickets that depend on this one)
     let dependents = TicketDependency::find()
-        .filter(ticket_assignee::Column::TicketId.eq(ticket_id))
+        .filter(ticket_dependency::Column::DependsOnId.eq(ticket_id))
         .all(state.db.as_ref())
         .await
         .map_err(ApiError::from)?;

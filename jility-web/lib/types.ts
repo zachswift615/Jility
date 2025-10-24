@@ -16,11 +16,18 @@ export interface Ticket {
   epic_id?: string
 }
 
+export interface TicketReference {
+  id: string
+  number: string
+  title: string
+  status: string
+}
+
 export interface TicketDetails {
   ticket: Ticket
   comments: Comment[]
-  dependencies: Ticket[]
-  dependents: Ticket[]
+  dependencies: TicketReference[]
+  dependents: TicketReference[]
   linked_commits: LinkedCommit[]
   recent_changes: TicketChange[]
 }
