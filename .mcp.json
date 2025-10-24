@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "jility": {
+      "command": "jility",
+      "args": ["--mcp-server"],
+      "env": {
+        "JILITY_MODE": "local"
+      }
+    }
+  }
+}

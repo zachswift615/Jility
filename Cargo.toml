@@ -1,0 +1,63 @@
+[workspace]
+members = [
+    "crates/jility-core",
+    "crates/jility-cli",
+    "crates/jility-server",
+    "crates/jility-mcp",
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["Jility Team"]
+license = "MIT"
+
+[workspace.dependencies]
+# Core
+jility-core = { path = "crates/jility-core" }
+
+# Async runtime
+tokio = { version = "1.35", features = ["full"] }
+futures = "0.3"
+
+# Database (SeaORM)
+sea-orm = { version = "0.12", features = [
+    "sqlx-sqlite",
+    "sqlx-postgres",
+    "runtime-tokio-native-tls",
+    "macros"
+] }
+sea-orm-migration = "0.12"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# IDs and time
+uuid = { version = "1.5", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+
+# Error handling
+anyhow = "1.0"
+thiserror = "1.0"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# CLI
+clap = { version = "4.4", features = ["derive", "cargo"] }
+colored = "2.1"
+tabled = "0.15"
+
+# Web server
+axum = "0.7"
+tower = "0.4"
+tower-http = { version = "0.5", features = ["cors", "trace"] }
+
+# Utilities
+regex = "1.10"
+tempfile = "3.8"
+async-trait = "0.1"
+rusqlite = { version = "0.30", features = ["bundled", "chrono", "uuid"] }
