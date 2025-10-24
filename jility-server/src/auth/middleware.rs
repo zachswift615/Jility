@@ -1,7 +1,7 @@
 use axum::{
     body::Body,
-    extract::{Request, State},
-    http::{header::AUTHORIZATION, StatusCode},
+    extract::State,
+    http::{header::AUTHORIZATION, Request, StatusCode},
     middleware::Next,
     response::{IntoResponse, Response},
 };
@@ -89,7 +89,7 @@ async fn validate_jwt_token(token: &str, state: &AppState) -> Result<AuthUser, A
     let session = Session::find()
         .filter(jility_core::session::Column::TokenHash.eq(&token_hash))
         .filter(jility_core::session::Column::UserId.eq(user_id))
-        .one(&**state.db)
+        .one(state.db.as_ref())
         .await
         .map_err(|e| AppError::Database(e))?;
 
@@ -108,7 +108,7 @@ async fn validate_jwt_token(token: &str, state: &AppState) -> Result<AuthUser, A
 
     // Fetch user from database
     let user = User::find_by_id(user_id)
-        .one(&**state.db)
+        .one(state.db.as_ref())
         .await
         .map_err(|e| AppError::Database(e))?
         .ok_or_else(|| AppError::Unauthorized("User not found".to_string()))?;
@@ -135,7 +135,7 @@ async fn validate_api_key(
     // Find API key by prefix
     let api_keys = ApiKey::find()
         .filter(jility_core::api_key::Column::Prefix.eq(&prefix))
-        .all(&**db)
+        .all(db.as_ref())
         .await
         .map_err(|e| AppError::Database(e))?;
 
@@ -173,14 +173,14 @@ async fn validate_api_key(
 
         if let Ok(Some(key)) = ApiKey::find_by_id(api_key_id).one(&*db_clone).await {
             let mut active_key: jility_core::api_key::ActiveModel = key.into();
-            active_key.last_used_at = Set(Some(chrono::Utc::now()));
+            active_key.last_used_at = Set(Some(chrono::Utc::now().into()));
             let _ = active_key.update(&*db_clone).await;
         }
     });
 
     // Fetch user
     let user = User::find_by_id(api_key.user_id)
-        .one(&**db)
+        .one(db.as_ref())
         .await
         .map_err(|e| AppError::Database(e))?
         .ok_or_else(|| AppError::Unauthorized("User not found".to_string()))?;

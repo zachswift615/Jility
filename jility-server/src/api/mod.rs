@@ -17,7 +17,7 @@ use axum::{
 use crate::auth::auth_middleware;
 use crate::state::AppState;
 
-pub fn api_routes() -> Router<AppState> {
+pub fn api_routes() -> (Router<AppState>, Router<AppState>) {
     // Public routes (no authentication required)
     let public_routes = Router::new()
         // Auth
@@ -28,10 +28,7 @@ pub fn api_routes() -> Router<AppState> {
         .route("/api/projects/:id", get(projects::get_project))
         .route("/api/tickets", get(tickets::list_tickets))
         .route("/api/tickets/:id", get(tickets::get_ticket))
-        .route("/api/tickets/:id/comments", get(comments::list_comments))
-        .route("/api/search", get(search::search_tickets))
-        .route("/api/search/views", get(search::list_saved_views))
-        .route("/api/search/views/:id", get(search::get_saved_view));
+        .route("/api/tickets/:id/comments", get(comments::list_comments));
 
     // Protected routes (authentication required)
     let protected_routes = Router::new()
@@ -44,6 +41,8 @@ pub fn api_routes() -> Router<AppState> {
         .route("/api/auth/sessions", get(auth::list_sessions))
         // Projects - write operations
         .route("/api/projects", post(projects::create_project))
+        .route("/api/projects/:id", put(projects::update_project))
+        .route("/api/projects/:id", delete(projects::delete_project))
         // Tickets - write operations
         .route("/api/tickets", post(tickets::create_ticket))
         .route("/api/tickets/:id", put(tickets::update_ticket))
@@ -83,7 +82,10 @@ pub fn api_routes() -> Router<AppState> {
             "/api/tickets/:id/revert/:version",
             post(activity::revert_to_version),
         )
-        // Saved Views - write operations
+        // Search and Saved Views
+        .route("/api/search", get(search::search_tickets))
+        .route("/api/search/views", get(search::list_saved_views))
+        .route("/api/search/views/:id", get(search::get_saved_view))
         .route("/api/search/views", post(search::create_saved_view))
         .route("/api/search/views/:id", put(search::update_saved_view))
         .route("/api/search/views/:id", delete(search::delete_saved_view))
@@ -102,8 +104,8 @@ pub fn api_routes() -> Router<AppState> {
         .route("/api/sprints/:id/tickets/:ticket_id", delete(sprints::remove_ticket_from_sprint))
         .route("/api/sprints/:id/stats", get(sprints::get_sprint_stats))
         .route("/api/sprints/:id/burndown", get(sprints::get_burndown))
-        .route("/api/projects/:project_id/sprint-history", get(sprints::get_sprint_history))
-        .layer(middleware::from_fn(auth_middleware));
+        .route("/api/projects/:project_id/sprint-history", get(sprints::get_sprint_history));
 
-    public_routes.merge(protected_routes)
+    // Return both routers - middleware will be applied in main.rs after with_state
+    (public_routes, protected_routes)
 }

@@ -55,7 +55,7 @@ impl MigrationTrait for Migration {
                             .timestamp_with_time_zone()
                             .not_null(),
                     )
-                    .col(ColumnDef::new(User::LastLogin).timestamp_with_time_zone())
+                    .col(ColumnDef::new(User::LastLoginAt).timestamp_with_time_zone())
                     .to_owned(),
             )
             .await?;
@@ -232,7 +232,7 @@ enum User {
     IsVerified,
     CreatedAt,
     UpdatedAt,
-    LastLogin,
+    LastLoginAt,
 }
 
 /// Identifier for ApiKey table

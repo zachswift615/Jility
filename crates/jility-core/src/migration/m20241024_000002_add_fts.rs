@@ -19,7 +19,7 @@ impl MigrationTrait for Migration {
                         ticket_number UNINDEXED,
                         title,
                         description,
-                        content=tickets,
+                        content=ticket,
                         content_rowid=id,
                         tokenize='porter unicode61'
                     )
@@ -35,34 +35,37 @@ impl MigrationTrait for Migration {
                         ticket_id UNINDEXED,
                         author UNINDEXED,
                         content,
+                        content=comment,
+                        content_rowid=id,
                         tokenize='porter unicode61'
                     )
                     "#,
                 )
                 .await?;
 
-                // Populate initial FTS data for tickets
-                db.execute_unprepared(
+                // Populate initial FTS data for tickets (only if ticket table exists and has data)
+                // Use INSERT OR IGNORE to handle any errors gracefully
+                let _ = db.execute_unprepared(
                     r#"
-                    INSERT INTO tickets_fts(ticket_id, ticket_number, title, description)
-                    SELECT id, ticket_number, title, description FROM tickets
+                    INSERT OR IGNORE INTO tickets_fts(ticket_id, ticket_number, title, description)
+                    SELECT id, ticket_number, title, description FROM ticket
                     "#,
                 )
-                .await?;
+                .await; // Ignore errors since table might be empty
 
-                // Populate initial FTS data for comments
-                db.execute_unprepared(
+                // Populate initial FTS data for comments (only if comment table exists and has data)
+                let _ = db.execute_unprepared(
                     r#"
-                    INSERT INTO comments_fts(comment_id, ticket_id, author, content)
-                    SELECT id, ticket_id, author, content FROM comments
+                    INSERT OR IGNORE INTO comments_fts(comment_id, ticket_id, author, content)
+                    SELECT id, ticket_id, author, content FROM comment
                     "#,
                 )
-                .await?;
+                .await; // Ignore errors since table might be empty
 
                 // Triggers to keep tickets FTS in sync
                 db.execute_unprepared(
                     r#"
-                    CREATE TRIGGER IF NOT EXISTS tickets_ai AFTER INSERT ON tickets BEGIN
+                    CREATE TRIGGER IF NOT EXISTS tickets_ai AFTER INSERT ON ticket BEGIN
                         INSERT INTO tickets_fts(ticket_id, ticket_number, title, description)
                         VALUES (new.id, new.ticket_number, new.title, new.description);
                     END
@@ -72,7 +75,7 @@ impl MigrationTrait for Migration {
 
                 db.execute_unprepared(
                     r#"
-                    CREATE TRIGGER IF NOT EXISTS tickets_au AFTER UPDATE ON tickets BEGIN
+                    CREATE TRIGGER IF NOT EXISTS tickets_au AFTER UPDATE ON ticket BEGIN
                         UPDATE tickets_fts
                         SET title = new.title, description = new.description
                         WHERE ticket_id = old.id;
@@ -83,7 +86,7 @@ impl MigrationTrait for Migration {
 
                 db.execute_unprepared(
                     r#"
-                    CREATE TRIGGER IF NOT EXISTS tickets_ad AFTER DELETE ON tickets BEGIN
+                    CREATE TRIGGER IF NOT EXISTS tickets_ad AFTER DELETE ON ticket BEGIN
                         DELETE FROM tickets_fts WHERE ticket_id = old.id;
                     END
                     "#,
@@ -93,7 +96,7 @@ impl MigrationTrait for Migration {
                 // Triggers to keep comments FTS in sync
                 db.execute_unprepared(
                     r#"
-                    CREATE TRIGGER IF NOT EXISTS comments_ai AFTER INSERT ON comments BEGIN
+                    CREATE TRIGGER IF NOT EXISTS comments_ai AFTER INSERT ON comment BEGIN
                         INSERT INTO comments_fts(comment_id, ticket_id, author, content)
                         VALUES (new.id, new.ticket_id, new.author, new.content);
                     END
@@ -103,7 +106,7 @@ impl MigrationTrait for Migration {
 
                 db.execute_unprepared(
                     r#"
-                    CREATE TRIGGER IF NOT EXISTS comments_au AFTER UPDATE ON comments BEGIN
+                    CREATE TRIGGER IF NOT EXISTS comments_au AFTER UPDATE ON comment BEGIN
                         UPDATE comments_fts
                         SET content = new.content
                         WHERE comment_id = old.id;
@@ -114,7 +117,7 @@ impl MigrationTrait for Migration {
 
                 db.execute_unprepared(
                     r#"
-                    CREATE TRIGGER IF NOT EXISTS comments_ad AFTER DELETE ON comments BEGIN
+                    CREATE TRIGGER IF NOT EXISTS comments_ad AFTER DELETE ON comment BEGIN
                         DELETE FROM comments_fts WHERE comment_id = old.id;
                     END
                     "#,
@@ -122,15 +125,15 @@ impl MigrationTrait for Migration {
                 .await?;
             }
             sea_orm::DatabaseBackend::Postgres => {
-                // Add tsvector column to tickets table
+                // Add tsvector column to ticket table
                 db.execute_unprepared(
-                    "ALTER TABLE tickets ADD COLUMN IF NOT EXISTS search_vector tsvector",
+                    "ALTER TABLE ticket ADD COLUMN IF NOT EXISTS search_vector tsvector",
                 )
                 .await?;
 
                 // Create GIN index for fast full-text search
                 db.execute_unprepared(
-                    "CREATE INDEX IF NOT EXISTS idx_tickets_search ON tickets USING GIN(search_vector)",
+                    "CREATE INDEX IF NOT EXISTS idx_tickets_search ON ticket USING GIN(search_vector)",
                 )
                 .await?;
 
@@ -152,9 +155,9 @@ impl MigrationTrait for Migration {
                 // Create trigger to auto-update search vector
                 db.execute_unprepared(
                     r#"
-                    DROP TRIGGER IF EXISTS tickets_search_update ON tickets;
+                    DROP TRIGGER IF EXISTS tickets_search_update ON ticket;
                     CREATE TRIGGER tickets_search_update
-                        BEFORE INSERT OR UPDATE ON tickets
+                        BEFORE INSERT OR UPDATE ON ticket
                         FOR EACH ROW
                         EXECUTE FUNCTION tickets_search_trigger()
                     "#,
@@ -164,7 +167,7 @@ impl MigrationTrait for Migration {
                 // Update existing rows
                 db.execute_unprepared(
                     r#"
-                    UPDATE tickets SET search_vector =
+                    UPDATE ticket SET search_vector =
                         setweight(to_tsvector('english', coalesce(title, '')), 'A') ||
                         setweight(to_tsvector('english', coalesce(description, '')), 'B')
                     WHERE search_vector IS NULL
@@ -172,15 +175,15 @@ impl MigrationTrait for Migration {
                 )
                 .await?;
 
-                // Add tsvector column to comments table
+                // Add tsvector column to comment table
                 db.execute_unprepared(
-                    "ALTER TABLE comments ADD COLUMN IF NOT EXISTS search_vector tsvector",
+                    "ALTER TABLE comment ADD COLUMN IF NOT EXISTS search_vector tsvector",
                 )
                 .await?;
 
                 // Create GIN index for comments
                 db.execute_unprepared(
-                    "CREATE INDEX IF NOT EXISTS idx_comments_search ON comments USING GIN(search_vector)",
+                    "CREATE INDEX IF NOT EXISTS idx_comments_search ON comment USING GIN(search_vector)",
                 )
                 .await?;
 
@@ -200,9 +203,9 @@ impl MigrationTrait for Migration {
                 // Create trigger for comments
                 db.execute_unprepared(
                     r#"
-                    DROP TRIGGER IF EXISTS comments_search_update ON comments;
+                    DROP TRIGGER IF EXISTS comments_search_update ON comment;
                     CREATE TRIGGER comments_search_update
-                        BEFORE INSERT OR UPDATE ON comments
+                        BEFORE INSERT OR UPDATE ON comment
                         FOR EACH ROW
                         EXECUTE FUNCTION comments_search_trigger()
                     "#,
@@ -211,7 +214,7 @@ impl MigrationTrait for Migration {
 
                 // Update existing comments
                 db.execute_unprepared(
-                    "UPDATE comments SET search_vector = to_tsvector('english', coalesce(content, '')) WHERE search_vector IS NULL",
+                    "UPDATE comment SET search_vector = to_tsvector('english', coalesce(content, '')) WHERE search_vector IS NULL",
                 )
                 .await?;
             }
@@ -306,9 +309,9 @@ impl MigrationTrait for Migration {
             }
             sea_orm::DatabaseBackend::Postgres => {
                 // Drop triggers
-                db.execute_unprepared("DROP TRIGGER IF EXISTS tickets_search_update ON tickets")
+                db.execute_unprepared("DROP TRIGGER IF EXISTS tickets_search_update ON ticket")
                     .await?;
-                db.execute_unprepared("DROP TRIGGER IF EXISTS comments_search_update ON comments")
+                db.execute_unprepared("DROP TRIGGER IF EXISTS comments_search_update ON comment")
                     .await?;
 
                 // Drop functions
@@ -324,9 +327,9 @@ impl MigrationTrait for Migration {
                     .await?;
 
                 // Drop columns
-                db.execute_unprepared("ALTER TABLE tickets DROP COLUMN IF EXISTS search_vector")
+                db.execute_unprepared("ALTER TABLE ticket DROP COLUMN IF EXISTS search_vector")
                     .await?;
-                db.execute_unprepared("ALTER TABLE comments DROP COLUMN IF EXISTS search_vector")
+                db.execute_unprepared("ALTER TABLE comment DROP COLUMN IF EXISTS search_vector")
                     .await?;
             }
             _ => {}

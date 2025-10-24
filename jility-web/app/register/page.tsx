@@ -1,11 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '@/lib/auth-context'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
 export default function RegisterPage() {
-  const { register, isLoading } = useAuth()
+  const { register, isLoading, isAuthenticated } = useAuth()
+  const router = useRouter()
   const [formData, setFormData] = useState({
     email: '',
     username: '',
@@ -15,6 +17,13 @@ export default function RegisterPage() {
   })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      router.push('/board')
+    }
+  }, [isAuthenticated, isLoading, router])
 
   const validatePassword = (password: string): string[] => {
     const errors: string[] = []

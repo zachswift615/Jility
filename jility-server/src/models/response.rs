@@ -8,6 +8,11 @@ pub struct ProjectResponse {
     pub id: String,
     pub name: String,
     pub description: Option<String>,
+    pub key: Option<String>,
+    pub color: Option<String>,
+    pub ai_planning_enabled: bool,
+    pub auto_link_git: bool,
+    pub require_story_points: bool,
     pub created_at: String,
     pub updated_at: String,
 }

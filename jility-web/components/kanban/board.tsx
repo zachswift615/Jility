@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
 import {
   DndContext,
   DragEndEvent,
@@ -15,13 +16,24 @@ import { api } from '@/lib/api'
 import { useWebSocket } from '@/lib/websocket'
 import { Column } from './column'
 import { TicketCard } from './ticket-card'
+import { CreateTicketDialog } from '../ticket/create-ticket-dialog'
 
 const STATUSES: TicketStatus[] = ['backlog', 'todo', 'in_progress', 'review', 'done', 'blocked']
 
 export function KanbanBoard() {
+  const searchParams = useSearchParams()
+  const router = useRouter()
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [activeTicket, setActiveTicket] = useState<Ticket | null>(null)
   const [loading, setLoading] = useState(true)
+  const [showCreateDialog, setShowCreateDialog] = useState(false)
+
+  // Check for create parameter
+  useEffect(() => {
+    if (searchParams.get('create') === 'true') {
+      setShowCreateDialog(true)
+    }
+  }, [searchParams])
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -111,6 +123,16 @@ export function KanbanBoard() {
     }
   }
 
+  const handleCloseDialog = () => {
+    setShowCreateDialog(false)
+    // Remove create param from URL
+    router.push('/board')
+  }
+
+  const handleTicketCreated = () => {
+    loadTickets()
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -120,24 +142,32 @@ export function KanbanBoard() {
   }
 
   return (
-    <DndContext
-      sensors={sensors}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-    >
-      <div className="flex gap-4 overflow-x-auto pb-4 px-6 pt-6 h-full">
-        {STATUSES.map((status) => (
-          <Column
-            key={status}
-            status={status}
-            tickets={tickets.filter((t) => t.status === status)}
-          />
-        ))}
-      </div>
+    <>
+      <DndContext
+        sensors={sensors}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+      >
+        <div className="flex gap-4 overflow-x-auto pb-4 px-6 pt-6 h-full">
+          {STATUSES.map((status) => (
+            <Column
+              key={status}
+              status={status}
+              tickets={tickets.filter((t) => t.status === status)}
+            />
+          ))}
+        </div>
 
-      <DragOverlay>
-        {activeTicket && <TicketCard ticket={activeTicket} />}
-      </DragOverlay>
-    </DndContext>
+        <DragOverlay>
+          {activeTicket && <TicketCard ticket={activeTicket} />}
+        </DragOverlay>
+      </DndContext>
+
+      <CreateTicketDialog
+        open={showCreateDialog}
+        onClose={handleCloseDialog}
+        onCreated={handleTicketCreated}
+      />
+    </>
   )
 }

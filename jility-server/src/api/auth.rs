@@ -162,9 +162,9 @@ pub async fn register(
         avatar_url: Set(None),
         is_active: Set(true),
         is_verified: Set(false),
-        created_at: Set(now),
-        updated_at: Set(now),
-        last_login: Set(Some(now)),
+        created_at: Set(now.into()),
+        updated_at: Set(now.into()),
+        last_login_at: Set(Some(now.into())),
     };
 
     let user = user.insert(&*state.db).await?;
@@ -188,8 +188,8 @@ pub async fn register(
         token_hash: Set(token_hash),
         ip_address: Set(None),
         user_agent: Set(None),
-        created_at: Set(now),
-        expires_at: Set(expires_at),
+        created_at: Set(now.into()),
+        expires_at: Set(expires_at.into()),
         revoked_at: Set(None),
     };
 
@@ -235,7 +235,7 @@ pub async fn login(
 
     // Update last_login
     let mut active_user: jility_core::user::ActiveModel = user.clone().into();
-    active_user.last_login = Set(Some(chrono::Utc::now()));
+    active_user.last_login_at = Set(Some(chrono::Utc::now().into()));
     active_user.update(&*state.db).await?;
 
     // Generate JWT
@@ -258,8 +258,8 @@ pub async fn login(
         token_hash: Set(token_hash),
         ip_address: Set(None),
         user_agent: Set(None),
-        created_at: Set(now),
-        expires_at: Set(expires_at),
+        created_at: Set(now.into()),
+        expires_at: Set(expires_at.into()),
         revoked_at: Set(None),
     };
 
@@ -338,9 +338,9 @@ pub async fn create_api_key(
         key_hash: Set(key_hash),
         prefix: Set(prefix.clone()),
         scopes: Set(serde_json::to_string(&req.scopes).unwrap_or_else(|_| "[]".to_string())),
-        expires_at: Set(expires_at),
+        expires_at: Set(expires_at.map(|t| t.into())),
         last_used_at: Set(None),
-        created_at: Set(now),
+        created_at: Set(now.into()),
         revoked_at: Set(None),
     };
 
@@ -411,7 +411,7 @@ pub async fn revoke_api_key(
 
     // Revoke key
     let mut active_key: jility_core::api_key::ActiveModel = api_key.into();
-    active_key.revoked_at = Set(Some(chrono::Utc::now()));
+    active_key.revoked_at = Set(Some(chrono::Utc::now().into()));
     active_key.update(&*state.db).await?;
 
     Ok(Json(serde_json::json!({ "success": true })))

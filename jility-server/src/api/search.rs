@@ -1,19 +1,20 @@
 use axum::{
     extract::{Path, Query, State},
+    Extension,
     Json,
 };
 use chrono::Utc;
 use jility_core::{
     entities::{saved_view, SavedView},
     search::{SearchFilters, SearchResponse as CoreSearchResponse},
-    ActiveModelTrait, ActiveValue, EntityTrait,
 };
+use sea_orm::{ActiveModelTrait, ActiveValue, EntityTrait};
 use sea_orm::ColumnTrait;
 use sea_orm::QueryFilter;
 use uuid::Uuid;
 
 use crate::{
-    auth::Claims,
+    auth::middleware::AuthUser,
     error::{ApiError, ApiResult},
     models::{
         CreateSavedViewRequest, SavedViewResponse, SearchQuery, UpdateSavedViewRequest,
@@ -24,7 +25,7 @@ use crate::{
 /// Search tickets with full-text search and advanced filters
 pub async fn search_tickets(
     State(state): State<AppState>,
-    _claims: Claims,
+    Extension(_auth_user): Extension<AuthUser>,
     Query(query): Query<SearchQuery>,
 ) -> ApiResult<Json<CoreSearchResponse>> {
     // Parse date filters
@@ -93,7 +94,7 @@ pub async fn search_tickets(
     // Execute search
     let response = state
         .search_service
-        .search_tickets(filters, query.limit, query.offset)
+        .search_tickets(filters, Some(query.limit), Some(query.offset))
         .await
         .map_err(ApiError::from)?;
 
@@ -103,10 +104,10 @@ pub async fn search_tickets(
 /// Get all saved views for the current user
 pub async fn list_saved_views(
     State(state): State<AppState>,
-    claims: Claims,
+    Extension(auth_user): Extension<AuthUser>,
 ) -> ApiResult<Json<Vec<SavedViewResponse>>> {
     let views = SavedView::find()
-        .filter(saved_view::Column::UserId.eq(&claims.sub))
+        .filter(saved_view::Column::UserId.eq(&auth_user.id.to_string()))
         .all(state.db.as_ref())
         .await
         .map_err(ApiError::from)?;
@@ -115,7 +116,7 @@ pub async fn list_saved_views(
         .into_iter()
         .map(|view| SavedViewResponse {
             id: view.id.to_string(),
-            user_id: view.user_id,
+            user_id: view.user_id.to_string(),
             name: view.name,
             description: view.description,
             filters: serde_json::from_str(&view.filters).unwrap_or(serde_json::json!({})),
@@ -132,7 +133,7 @@ pub async fn list_saved_views(
 /// Get a specific saved view
 pub async fn get_saved_view(
     State(state): State<AppState>,
-    claims: Claims,
+    Extension(auth_user): Extension<AuthUser>,
     Path(id): Path<Uuid>,
 ) -> ApiResult<Json<SavedViewResponse>> {
     let view = SavedView::find_by_id(id)
@@ -142,7 +143,7 @@ pub async fn get_saved_view(
         .ok_or_else(|| ApiError::NotFound("Saved view not found".to_string()))?;
 
     // Check if user owns this view or if it's shared
-    if view.user_id != claims.sub && !view.is_shared {
+    if view.user_id.to_string() != auth_user.id.to_string() && !view.is_shared {
         return Err(ApiError::Forbidden(
             "You don't have permission to view this saved view".to_string(),
         ));
@@ -150,7 +151,7 @@ pub async fn get_saved_view(
 
     Ok(Json(SavedViewResponse {
         id: view.id.to_string(),
-        user_id: view.user_id,
+        user_id: view.user_id.to_string(),
         name: view.name,
         description: view.description,
         filters: serde_json::from_str(&view.filters).unwrap_or(serde_json::json!({})),
@@ -164,22 +165,24 @@ pub async fn get_saved_view(
 /// Create a new saved view
 pub async fn create_saved_view(
     State(state): State<AppState>,
-    claims: Claims,
+    Extension(auth_user): Extension<AuthUser>,
     Json(req): Json<CreateSavedViewRequest>,
 ) -> ApiResult<Json<SavedViewResponse>> {
     let now = Utc::now();
     let id = Uuid::new_v4();
+    let user_id = Uuid::parse_str(&auth_user.id.to_string())
+        .map_err(|_| ApiError::InvalidInput("Invalid user ID".to_string()))?;
 
     let view = saved_view::ActiveModel {
         id: ActiveValue::Set(id),
-        user_id: ActiveValue::Set(claims.sub.clone()),
+        user_id: ActiveValue::Set(user_id),
         name: ActiveValue::Set(req.name),
         description: ActiveValue::Set(req.description),
         filters: ActiveValue::Set(req.filters.to_string()),
         is_default: ActiveValue::Set(req.is_default.unwrap_or(false)),
         is_shared: ActiveValue::Set(req.is_shared.unwrap_or(false)),
-        created_at: ActiveValue::Set(now),
-        updated_at: ActiveValue::Set(now),
+        created_at: ActiveValue::Set(now.into()),
+        updated_at: ActiveValue::Set(now.into()),
     };
 
     let view = view
@@ -189,7 +192,7 @@ pub async fn create_saved_view(
 
     Ok(Json(SavedViewResponse {
         id: view.id.to_string(),
-        user_id: view.user_id,
+        user_id: view.user_id.to_string(),
         name: view.name,
         description: view.description,
         filters: serde_json::from_str(&view.filters).unwrap_or(serde_json::json!({})),
@@ -203,7 +206,7 @@ pub async fn create_saved_view(
 /// Update a saved view
 pub async fn update_saved_view(
     State(state): State<AppState>,
-    claims: Claims,
+    Extension(auth_user): Extension<AuthUser>,
     Path(id): Path<Uuid>,
     Json(req): Json<UpdateSavedViewRequest>,
 ) -> ApiResult<Json<SavedViewResponse>> {
@@ -214,7 +217,7 @@ pub async fn update_saved_view(
         .ok_or_else(|| ApiError::NotFound("Saved view not found".to_string()))?;
 
     // Only owner can update
-    if view.user_id != claims.sub {
+    if view.user_id.to_string() != auth_user.id.to_string() {
         return Err(ApiError::Forbidden(
             "You don't have permission to update this saved view".to_string(),
         ));
@@ -238,7 +241,7 @@ pub async fn update_saved_view(
         active_view.is_shared = ActiveValue::Set(is_shared);
     }
 
-    active_view.updated_at = ActiveValue::Set(Utc::now());
+    active_view.updated_at = ActiveValue::Set(Utc::now().into());
 
     let view = active_view
         .update(state.db.as_ref())
@@ -247,7 +250,7 @@ pub async fn update_saved_view(
 
     Ok(Json(SavedViewResponse {
         id: view.id.to_string(),
-        user_id: view.user_id,
+        user_id: view.user_id.to_string(),
         name: view.name,
         description: view.description,
         filters: serde_json::from_str(&view.filters).unwrap_or(serde_json::json!({})),
@@ -261,7 +264,7 @@ pub async fn update_saved_view(
 /// Delete a saved view
 pub async fn delete_saved_view(
     State(state): State<AppState>,
-    claims: Claims,
+    Extension(auth_user): Extension<AuthUser>,
     Path(id): Path<Uuid>,
 ) -> ApiResult<Json<serde_json::Value>> {
     let view = SavedView::find_by_id(id)
@@ -271,7 +274,7 @@ pub async fn delete_saved_view(
         .ok_or_else(|| ApiError::NotFound("Saved view not found".to_string()))?;
 
     // Only owner can delete
-    if view.user_id != claims.sub {
+    if view.user_id.to_string() != auth_user.id.to_string() {
         return Err(ApiError::Forbidden(
             "You don't have permission to delete this saved view".to_string(),
         ));

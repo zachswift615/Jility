@@ -8,11 +8,14 @@
 
 pub mod db;
 pub mod entities;
+pub mod error;
 pub mod migration;
+pub mod search;
 
 // Re-export commonly used types
 pub use db::{connect, run_migrations, DatabaseConfig};
 pub use entities::*;
+pub use error::{CoreError, CoreResult};
 pub use sea_orm;
 
 // Re-export UUID and Chrono types for convenience
