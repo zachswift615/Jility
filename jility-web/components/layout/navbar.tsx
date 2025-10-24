@@ -9,7 +9,7 @@ import { ProjectSwitcher } from '@/components/projects/project-switcher'
 import { ProjectFormDialog } from '@/components/projects/project-form-dialog'
 import { useProject } from '@/lib/project-context'
 import { Button } from '@/components/ui/button'
-import { Layers, BarChart3, Boxes, Calendar, Activity, Clock, ChevronDown } from 'lucide-react'
+import { Layers, BarChart3, Boxes, Calendar, Activity, Clock, ChevronDown, ListTodo } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export function Navbar() {
@@ -28,6 +28,7 @@ export function Navbar() {
   }
 
   const links = [
+    { href: '/backlog', label: 'Backlog', icon: ListTodo },
     { href: '/board', label: 'Board', icon: Layers },
     { href: '/sprint/planning', label: 'Sprint Planning', icon: Calendar },
     { href: '/sprint/active', label: 'Active Sprint', icon: Activity },
