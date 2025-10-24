@@ -22,13 +22,13 @@ tokio = { version = "1.35", features = ["full"] }
 futures = "0.3"
 
 # Database (SeaORM)
-sea-orm = { version = "0.12", features = [
+sea-orm = { version = "1.1", features = [
     "sqlx-sqlite",
     "sqlx-postgres",
     "runtime-tokio-native-tls",
     "macros"
 ] }
-sea-orm-migration = "0.12"
+sea-orm-migration = "1.1"
 
 # Serialization
 serde = { version = "1.0", features = ["derive"] }
