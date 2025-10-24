@@ -1,0 +1,45 @@
+[package]
+name = "jility-server"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "jility-server"
+path = "src/main.rs"
+
+[dependencies]
+# Core library
+jility-core = { path = "../jility-core" }
+
+# Web framework
+axum = { version = "0.7", features = ["ws", "macros"] }
+tower = "0.4"
+tower-http = { version = "0.5", features = ["cors", "trace", "fs"] }
+
+# Database
+sea-orm.workspace = true
+
+# Serialization
+serde.workspace = true
+serde_json.workspace = true
+
+# IDs and time
+uuid.workspace = true
+chrono.workspace = true
+
+# Error handling
+anyhow.workspace = true
+thiserror.workspace = true
+
+# Async
+tokio.workspace = true
+futures.workspace = true
+
+# Logging
+tracing.workspace = true
+tracing-subscriber.workspace = true
+
+# HTTP
+http = "1.0"

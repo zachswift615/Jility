@@ -1,0 +1,32 @@
+[package]
+name = "jility-mcp"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "jility-mcp"
+path = "src/main.rs"
+
+[dependencies]
+# Core
+jility-core.workspace = true
+
+# MCP
+rmcp = "0.1"
+schemars = "0.8"
+
+# Database
+sea-orm.workspace = true
+uuid.workspace = true
+
+# Utilities
+anyhow.workspace = true
+tokio.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+
+# Logging
+tracing.workspace = true
+tracing-subscriber.workspace = true
