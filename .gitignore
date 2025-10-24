@@ -1,2 +1,24 @@
 .DS_Store
 target
+
+# Environment variables and secrets
+.env
+.env.local
+
+# Database and runtime data
+.jility/
+*.db
+*.db-shm
+*.db-wal
+
+# Workshop local state
+.workshop/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+Thumbs.db
