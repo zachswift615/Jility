@@ -118,11 +118,20 @@ export const api = {
   },
 
   updateTicketStatus: async (id: string, status: string): Promise<Ticket> => {
+    const headers = {
+      'Content-Type': 'application/json',
+      ...getAuthHeaders(),
+    }
+    console.log('[API] updateTicketStatus - Headers:', headers)
+    console.log('[API] updateTicketStatus - Payload:', { id, status })
+
     const res = await fetch(`${API_BASE}/tickets/${id}/status`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({ status }),
     })
+
+    console.log('[API] updateTicketStatus - Response status:', res.status)
     return handleResponse<Ticket>(res)
   },
 

@@ -101,13 +101,25 @@ export function KanbanBoard() {
     const { active, over } = event
     setActiveTicket(null)
 
-    if (!over) return
+    console.log('[DragEnd] Event:', { activeId: active.id, overId: over?.id })
+
+    if (!over) {
+      console.log('[DragEnd] No drop target, aborting')
+      return
+    }
 
     const ticketId = active.id as string
     const newStatus = over.id as TicketStatus
 
     const ticket = tickets.find((t) => t.id === ticketId)
-    if (!ticket || ticket.status === newStatus) return
+    console.log('[DragEnd] Ticket:', ticket, 'New status:', newStatus)
+
+    if (!ticket || ticket.status === newStatus) {
+      console.log('[DragEnd] Skipping update - ticket not found or same status')
+      return
+    }
+
+    console.log('[DragEnd] Updating ticket status from', ticket.status, 'to', newStatus)
 
     // Optimistic update
     setTickets((prev) =>
@@ -115,9 +127,10 @@ export function KanbanBoard() {
     )
 
     try {
-      await api.updateTicketStatus(ticketId, newStatus)
+      const result = await api.updateTicketStatus(ticketId, newStatus)
+      console.log('[DragEnd] Update successful:', result)
     } catch (error) {
-      console.error('Failed to update ticket status:', error)
+      console.error('[DragEnd] Failed to update ticket status:', error)
       // Revert on error
       loadTickets()
     }
