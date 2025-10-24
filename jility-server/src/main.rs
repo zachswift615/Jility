@@ -79,7 +79,7 @@ async fn main() -> Result<()> {
         );
 
     // Start server
-    let addr = std::env::var("BIND_ADDRESS").unwrap_or_else(|_| "0.0.0.0:3000".to_string());
+    let addr = std::env::var("BIND_ADDRESS").unwrap_or_else(|_| "0.0.0.0:3900".to_string());
     tracing::info!("Listening on {}", addr);
 
     let listener = tokio::net::TcpListener::bind(&addr).await?;
