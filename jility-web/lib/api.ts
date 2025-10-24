@@ -27,6 +27,16 @@ function getAuthHeaders(): Record<string, string> {
 
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
+    // Handle 401 Unauthorized - redirect to login
+    if (response.status === 401) {
+      // Clear invalid token
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('jility_token')
+        // Redirect to login page
+        window.location.href = '/login'
+      }
+    }
+
     const error = await response.json().catch(() => ({ message: 'Unknown error' }))
     throw new Error(error.message || `HTTP ${response.status}`)
   }
