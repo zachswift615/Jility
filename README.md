@@ -107,6 +107,111 @@ open http://localhost:3000
 
 ---
 
+## Development
+
+### Prerequisites
+- Rust (latest stable)
+- Node.js 18+ and npm
+- Git
+
+### Quick Start with dev.sh
+
+The easiest way to run Jility in development mode is using the `dev.sh` script:
+
+```bash
+# Start both backend and frontend servers
+./dev.sh start
+
+# Check status of running services
+./dev.sh status
+
+# Restart all services
+./dev.sh restart
+
+# Stop all services
+./dev.sh stop
+```
+
+**Ports:**
+- Backend API: `http://localhost:3900`
+- Frontend UI: `http://localhost:3901`
+
+### Manual Development Setup
+
+If you prefer to run services manually or need more control:
+
+#### 1. Backend (Rust/Axum)
+
+```bash
+# Navigate to backend directory
+cd jility-server
+
+# Build and run in development mode
+cargo run
+
+# Or use cargo watch for auto-reload
+cargo install cargo-watch
+cargo watch -x run
+```
+
+The backend will start on `http://localhost:3900`.
+
+#### 2. Frontend (Next.js)
+
+```bash
+# Navigate to frontend directory
+cd jility-web
+
+# Install dependencies (first time only)
+npm install
+
+# Create local environment file
+cp .env.local.example .env.local
+
+# Start development server
+npm run dev
+```
+
+The frontend will start on `http://localhost:3901`.
+
+### Environment Configuration
+
+#### Backend (.env in project root)
+```bash
+DATABASE_URL=sqlite://.jility/data.db?mode=rwc
+JWT_SECRET=your_secret_key_here
+BIND_ADDRESS=0.0.0.0:3900
+```
+
+#### Frontend (.env.local in jility-web/)
+```bash
+NEXT_PUBLIC_API_URL=http://localhost:3900/api
+```
+
+### Database Migrations
+
+Migrations run automatically on backend startup. The database is stored in `.jility/data.db`.
+
+To reset the database:
+```bash
+rm -rf .jility/data.db*
+cargo run  # Will recreate and run migrations
+```
+
+### Project Structure
+
+```
+jility/
+├── jility-server/      # Rust backend (Axum + SQLite)
+├── jility-web/         # Next.js frontend
+├── jility-core/        # Shared Rust models/logic
+├── jility-cli/         # CLI tool (coming soon)
+├── jility-mcp/         # MCP server for AI agents
+└── dev.sh              # Development helper script
+```
+
+---
+
 ## Documentation
 
 - **[Wireframes](jility-wireframes.html)** - Interactive UI mockups showing all key screens
