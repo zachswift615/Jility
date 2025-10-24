@@ -64,7 +64,7 @@ pub async fn connect(config: &DatabaseConfig) -> Result<DatabaseConnection> {
         .idle_timeout(Duration::from_secs(8))
         .max_lifetime(Duration::from_secs(8))
         .sqlx_logging(true)
-        .sqlx_logging_level(log::LevelFilter::Debug);
+        .sqlx_logging_level(tracing::log::LevelFilter::Debug);
 
     // For SQLite, ensure WAL mode for better concurrency
     if matches!(config, DatabaseConfig::Sqlite { .. }) {
