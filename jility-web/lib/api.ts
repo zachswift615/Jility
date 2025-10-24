@@ -5,6 +5,8 @@ import type {
   UpdateTicketRequest,
   Comment,
   Project,
+  CreateProjectRequest,
+  UpdateProjectRequest,
   TicketFilters,
   LinkedCommit,
   TicketChange,
@@ -38,7 +40,7 @@ export const api = {
     return handleResponse<Project[]>(res)
   },
 
-  createProject: async (data: { name: string; description?: string }): Promise<Project> => {
+  createProject: async (data: CreateProjectRequest): Promise<Project> => {
     const res = await fetch(`${API_BASE}/projects`, {
       method: 'POST',
       headers: {
@@ -53,6 +55,26 @@ export const api = {
   getProject: async (id: string): Promise<Project> => {
     const res = await fetch(`${API_BASE}/projects/${id}`)
     return handleResponse<Project>(res)
+  },
+
+  updateProject: async (id: string, data: UpdateProjectRequest): Promise<Project> => {
+    const res = await fetch(`${API_BASE}/projects/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeaders(),
+      },
+      body: JSON.stringify(data),
+    })
+    return handleResponse<Project>(res)
+  },
+
+  deleteProject: async (id: string): Promise<{ success: boolean }> => {
+    const res = await fetch(`${API_BASE}/projects/${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    })
+    return handleResponse<{ success: boolean }>(res)
   },
 
   // Tickets

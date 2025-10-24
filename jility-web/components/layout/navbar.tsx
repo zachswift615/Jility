@@ -1,14 +1,31 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { ThemeSwitcher } from '@/components/theme-switcher'
 import { CommandPalette } from '@/components/command-palette'
-import { Layers, BarChart3, Boxes, Calendar, Activity, Clock } from 'lucide-react'
+import { ProjectSwitcher } from '@/components/projects/project-switcher'
+import { ProjectFormDialog } from '@/components/projects/project-form-dialog'
+import { useProject } from '@/lib/project-context'
+import { Button } from '@/components/ui/button'
+import { Layers, BarChart3, Boxes, Calendar, Activity, Clock, ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export function Navbar() {
   const pathname = usePathname()
+  const { currentProject } = useProject()
+  const [showProjectSwitcher, setShowProjectSwitcher] = useState(false)
+  const [showProjectForm, setShowProjectForm] = useState(false)
+
+  // Get project icon (first 2 letters of name)
+  const getProjectIcon = (name: string) => {
+    return name.slice(0, 2).toUpperCase()
+  }
+
+  const handleCreateNew = () => {
+    setShowProjectForm(true)
+  }
 
   const links = [
     { href: '/board', label: 'Board', icon: Layers },
@@ -50,11 +67,54 @@ export function Navbar() {
           </div>
 
           <div className="flex items-center gap-4">
+            {/* Project Switcher Button or Create Project Button */}
+            {currentProject ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowProjectSwitcher(true)}
+                className="flex items-center gap-2"
+              >
+                <div
+                  className="w-5 h-5 rounded flex items-center justify-center text-white font-semibold text-xs"
+                  style={{
+                    backgroundColor: currentProject.color || '#5e6ad2',
+                  }}
+                >
+                  {getProjectIcon(currentProject.name)}
+                </div>
+                <span className="font-medium">{currentProject.name}</span>
+                <ChevronDown className="h-4 w-4 opacity-50" />
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCreateNew}
+                className="flex items-center gap-2"
+              >
+                <span className="font-medium">Create Project</span>
+              </Button>
+            )}
+
             <CommandPalette />
             <ThemeSwitcher />
           </div>
         </div>
       </div>
+
+      {/* Project Switcher Modal */}
+      <ProjectSwitcher
+        open={showProjectSwitcher}
+        onOpenChange={setShowProjectSwitcher}
+        onCreateNew={handleCreateNew}
+      />
+
+      {/* Project Form Dialog */}
+      <ProjectFormDialog
+        open={showProjectForm}
+        onOpenChange={setShowProjectForm}
+      />
     </nav>
   )
 }

@@ -57,8 +57,33 @@ export interface Project {
   id: string
   name: string
   description?: string
+  key?: string
+  color?: string
+  ai_planning_enabled: boolean
+  auto_link_git: boolean
+  require_story_points: boolean
   created_at: string
   updated_at: string
+}
+
+export interface CreateProjectRequest {
+  name: string
+  description?: string
+  key?: string
+  color?: string
+  ai_planning_enabled?: boolean
+  auto_link_git?: boolean
+  require_story_points?: boolean
+}
+
+export interface UpdateProjectRequest {
+  name?: string
+  description?: string
+  key?: string
+  color?: string
+  ai_planning_enabled?: boolean
+  auto_link_git?: boolean
+  require_story_points?: boolean
 }
 
 export interface CreateTicketRequest {

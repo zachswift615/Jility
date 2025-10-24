@@ -6,11 +6,31 @@ use uuid::Uuid;
 pub struct CreateProjectRequest {
     pub name: String,
     pub description: Option<String>,
+    pub key: Option<String>,
+    pub color: Option<String>,
+    #[serde(default)]
+    pub ai_planning_enabled: bool,
+    #[serde(default)]
+    pub auto_link_git: bool,
+    #[serde(default)]
+    pub require_story_points: bool,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct UpdateProjectRequest {
+    pub name: Option<String>,
+    pub description: Option<String>,
+    pub key: Option<String>,
+    pub color: Option<String>,
+    pub ai_planning_enabled: Option<bool>,
+    pub auto_link_git: Option<bool>,
+    pub require_story_points: Option<bool>,
 }
 
 // Ticket requests
 #[derive(Debug, Deserialize)]
 pub struct CreateTicketRequest {
+    pub project_id: Uuid,
     pub title: String,
     #[serde(default)]
     pub description: Option<String>,

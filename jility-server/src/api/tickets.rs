@@ -99,8 +99,8 @@ pub async fn create_ticket(
     let now = Utc::now();
     let ticket_id = Uuid::new_v4();
 
-    // Default project ID for now (we'll need to get this from the request or user context)
-    let project_id = Uuid::new_v4(); // TODO: Get from actual project
+    // Use project_id from the request
+    let project_id = payload.project_id;
 
     // Get next ticket number for this project
     let max_number: Option<i32> = Ticket::find()
