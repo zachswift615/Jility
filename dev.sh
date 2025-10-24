@@ -17,6 +17,22 @@ FRONTEND_PORT=3901
 BACKEND_PID="/tmp/jility-backend.pid"
 FRONTEND_PID="/tmp/jility-frontend.pid"
 
+# Trap handler for clean shutdown
+cleanup() {
+    echo -e "\n${YELLOW}Caught interrupt signal, stopping servers...${NC}"
+    if [ -f "$BACKEND_PID" ]; then
+        kill $(cat "$BACKEND_PID") 2>/dev/null || true
+        rm -f "$BACKEND_PID"
+    fi
+    if [ -f "$FRONTEND_PID" ]; then
+        kill $(cat "$FRONTEND_PID") 2>/dev/null || true
+        rm -f "$FRONTEND_PID"
+    fi
+    exit 0
+}
+
+trap cleanup INT TERM
+
 # Kill process on port
 kill_port() {
     local port=$1
@@ -85,7 +101,51 @@ fi
 
 case "$1" in
     start)
-        echo "Start command - to be implemented"
+        check_prerequisites
+
+        echo "🧹 Cleaning up old processes..."
+        kill_port $BACKEND_PORT
+        kill_port $FRONTEND_PORT
+
+        # Ensure .jility directory exists
+        mkdir -p .jility
+
+        echo "🚀 Starting backend on port $BACKEND_PORT..."
+
+        # Start backend
+        RUST_LOG=info cargo run --manifest-path jility-server/Cargo.toml 2>&1 | prefix_output "backend" "$BLUE" &
+        BACKEND_PID_VAL=$!
+        echo $BACKEND_PID_VAL > "$BACKEND_PID"
+
+        # Wait for backend to start
+        echo "⏳ Waiting for backend to compile and start..."
+        sleep 5
+
+        if ! is_port_in_use $BACKEND_PORT; then
+            echo -e "${RED}Error: Backend failed to start${NC}"
+            exit 1
+        fi
+
+        echo "🚀 Starting frontend on port $FRONTEND_PORT..."
+
+        # Start frontend
+        (cd jility-web && npm run dev -- -p $FRONTEND_PORT) 2>&1 | prefix_output "frontend" "$GREEN" &
+        FRONTEND_PID_VAL=$!
+        echo $FRONTEND_PID_VAL > "$FRONTEND_PID"
+
+        # Wait a bit for frontend
+        sleep 3
+
+        echo ""
+        echo -e "${GREEN}✅ Both servers running!${NC}"
+        echo -e "   Backend:  ${BLUE}http://localhost:$BACKEND_PORT${NC}"
+        echo -e "   Frontend: ${GREEN}http://localhost:$FRONTEND_PORT${NC}"
+        echo ""
+        echo -e "${YELLOW}Press Ctrl+C to stop both servers${NC}"
+        echo ""
+
+        # Wait for both processes
+        wait
         ;;
     stop)
         echo "🛑 Stopping servers..."
@@ -123,7 +183,9 @@ case "$1" in
         echo -e "${GREEN}✅ All servers stopped${NC}"
         ;;
     restart)
-        echo "Restart command - to be implemented"
+        $0 stop
+        sleep 2
+        $0 start
         ;;
     status)
         echo "🔍 Checking server status..."
