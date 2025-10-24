@@ -104,8 +104,8 @@ case "$1" in
         check_prerequisites
 
         echo "🧹 Cleaning up old processes..."
-        kill_port $BACKEND_PORT
-        kill_port $FRONTEND_PORT
+        kill_port $BACKEND_PORT || true
+        kill_port $FRONTEND_PORT || true
 
         # Ensure .jility directory exists
         mkdir -p .jility
@@ -135,6 +135,16 @@ case "$1" in
 
         # Wait a bit for frontend
         sleep 3
+
+        if ! is_port_in_use $FRONTEND_PORT; then
+            echo -e "${RED}Error: Frontend failed to start${NC}"
+            # Clean up backend before exiting
+            if [ -f "$BACKEND_PID" ]; then
+                kill $(cat "$BACKEND_PID") 2>/dev/null || true
+                rm -f "$BACKEND_PID"
+            fi
+            exit 1
+        fi
 
         echo ""
         echo -e "${GREEN}✅ Both servers running!${NC}"
