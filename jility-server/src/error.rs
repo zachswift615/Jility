@@ -22,6 +22,9 @@ pub enum ApiError {
 
     #[error("Validation error: {0}")]
     Validation(String),
+
+    #[error("Unauthorized: {0}")]
+    Unauthorized(String),
 }
 
 impl From<jility_core::CoreError> for ApiError {
@@ -55,6 +58,7 @@ impl IntoResponse for ApiError {
             ApiError::Database(_) | ApiError::Internal(_) => {
                 (StatusCode::INTERNAL_SERVER_ERROR, "internal_error")
             }
+            ApiError::Unauthorized(_) => (StatusCode::UNAUTHORIZED, "unauthorized"),
         };
 
         let body = Json(ErrorResponse {
@@ -68,3 +72,4 @@ impl IntoResponse for ApiError {
 }
 
 pub type ApiResult<T> = Result<T, ApiError>;
+pub type AppError = ApiError; // Alias for consistency

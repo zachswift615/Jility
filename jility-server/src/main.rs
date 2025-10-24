@@ -1,4 +1,5 @@
 mod api;
+mod auth;
 mod error;
 mod models;
 mod state;
@@ -39,8 +40,15 @@ async fn main() -> Result<()> {
     tracing::info!("Connecting to database: {}", database_url);
     let db = connect_database(&database_url).await?;
 
+    // Get JWT secret from environment
+    let jwt_secret = std::env::var("JWT_SECRET")
+        .unwrap_or_else(|_| {
+            tracing::warn!("JWT_SECRET not set, using default (NOT SECURE FOR PRODUCTION)");
+            "insecure_default_secret_change_in_production".to_string()
+        });
+
     // Create app state
-    let state = AppState::new(db);
+    let state = AppState::new(db, jwt_secret);
 
     // Build router
     let app = Router::new()

@@ -94,3 +94,82 @@ export interface TicketFilters {
   status?: TicketStatus
   assignee?: string
 }
+
+// Search types
+export interface SearchFilters {
+  q: string
+  status?: string[]
+  assignees?: string[]
+  labels?: string[]
+  created_by?: string
+  created_after?: string
+  created_before?: string
+  updated_after?: string
+  updated_before?: string
+  min_points?: number
+  max_points?: number
+  has_comments?: boolean
+  has_commits?: boolean
+  has_dependencies?: boolean
+  epic_id?: string
+  parent_id?: string
+  project_id?: string
+  search_in?: string[]
+  limit?: number
+  offset?: number
+}
+
+export interface SearchResult {
+  ticket_id: string
+  ticket_number: string
+  title: string
+  description: string
+  status: string
+  story_points?: number
+  snippet: string
+  rank: number
+  matched_in: string[]
+  assignees: string[]
+  labels: string[]
+  created_by: string
+  created_at: string
+  updated_at: string
+  parent_id?: string
+  epic_id?: string
+}
+
+export interface SearchResponse {
+  results: SearchResult[]
+  total: number
+  has_more: boolean
+  offset: number
+  limit: number
+}
+
+export interface SavedView {
+  id: string
+  user_id: string
+  name: string
+  description?: string
+  filters: SearchFilters
+  is_default: boolean
+  is_shared: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface CreateSavedViewRequest {
+  name: string
+  description?: string
+  filters: SearchFilters
+  is_default?: boolean
+  is_shared?: boolean
+}
+
+export interface UpdateSavedViewRequest {
+  name?: string
+  description?: string
+  filters?: SearchFilters
+  is_default?: boolean
+  is_shared?: boolean
+}
