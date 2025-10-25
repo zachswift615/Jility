@@ -100,6 +100,13 @@
   .mb-mobile-nav {
     margin-bottom: 4rem; /* 64px for bottom nav height */
   }
+
+  /* FAB positioning with safe area */
+  @supports (padding: env(safe-area-inset-bottom)) {
+    .bottom-20 {
+      bottom: calc(5rem + env(safe-area-inset-bottom));
+    }
+  }
 }
 
 /* Custom scrollbar */
