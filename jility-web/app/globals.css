@@ -91,6 +91,15 @@
   .text-balance {
     text-wrap: balance;
   }
+
+  /* Mobile bottom nav spacing */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .mb-mobile-nav {
+    margin-bottom: 4rem; /* 64px for bottom nav height */
+  }
 }
 
 /* Custom scrollbar */

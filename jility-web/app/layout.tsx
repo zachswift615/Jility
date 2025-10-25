@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 import { Providers } from './providers'
 import { Navbar } from '@/components/layout/navbar'
+import { MobileBottomNav } from '@/components/layout/mobile-bottom-nav'
 
 export const metadata: Metadata = {
   title: 'Jility - AI-Native Project Management',
@@ -19,9 +20,10 @@ export default function RootLayout({
         <Providers>
           <div className="min-h-screen flex flex-col">
             <Navbar />
-            <main className="flex-1">
+            <main className="flex-1 mb-mobile-nav md:mb-0">
               {children}
             </main>
+            <MobileBottomNav />
           </div>
         </Providers>
       </body>
