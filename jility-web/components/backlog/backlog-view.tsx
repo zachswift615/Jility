@@ -133,7 +133,7 @@ export function BacklogView() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-gray-50 p-6">
+    <div className="flex flex-col h-full bg-gray-50 p-3 md:p-6">
       <div className="max-w-7xl w-full mx-auto">
         <BacklogToolbar
           totalItems={tickets.length}

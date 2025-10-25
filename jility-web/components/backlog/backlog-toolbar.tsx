@@ -17,8 +17,8 @@ export function BacklogToolbar({
   onFilterChange,
 }: BacklogToolbarProps) {
   return (
-    <div className="flex items-center justify-between mb-5 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-      <div className="flex items-center gap-3">
+    <div className="flex flex-col sm:flex-row gap-3 sm:gap-0 sm:items-center sm:justify-between mb-5 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+      <div className="flex flex-wrap items-center gap-3">
         <Button variant="outline" size="sm" className="gap-2">
           <Zap className="h-4 w-4" />
           Quick Add
@@ -39,7 +39,7 @@ export function BacklogToolbar({
           <option value="needs_breakdown">Needs Breakdown</option>
         </select>
       </div>
-      <div className="flex items-center gap-2 text-sm text-gray-600">
+      <div className="flex items-center gap-2 text-sm text-gray-600 justify-start sm:justify-end">
         <span className="font-semibold">{totalItems} items</span>
         <span>•</span>
         <span>{totalPoints} story points</span>

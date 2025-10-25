@@ -28,10 +28,10 @@ export function BacklogSection({
     <div className="border-b border-gray-200 last:border-b-0">
       {/* Section Header */}
       <div
-        className="flex items-center justify-between px-4 py-3 bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors"
+        className="flex items-center justify-between p-3 md:p-4 bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors"
         onClick={onToggle}
       >
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 md:gap-3">
           {expanded ? (
             <ChevronDown className="h-4 w-4 text-gray-500" />
           ) : (
@@ -49,7 +49,7 @@ export function BacklogSection({
           )}
         </div>
         {action && (
-          <div onClick={(e) => e.stopPropagation()}>
+          <div className="text-xs md:text-sm" onClick={(e) => e.stopPropagation()}>
             {action}
           </div>
         )}

@@ -44,7 +44,7 @@ export function BacklogTicketItem({ ticket, isDragging = false }: BacklogTicketI
       ref={setNodeRef}
       style={style}
       className={cn(
-        'group px-4 py-3 border-b border-gray-200 last:border-b-0 cursor-move transition-colors hover:bg-gray-50',
+        'group p-3 md:p-4 border-b border-gray-200 last:border-b-0 cursor-move transition-colors hover:bg-gray-50',
         isDragging && 'opacity-50 shadow-lg bg-white'
       )}
     >
