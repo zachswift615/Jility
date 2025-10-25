@@ -12,7 +12,7 @@ export function MobileBottomNav() {
     { href: '/board', label: 'Board', icon: Layers },
     { href: '/backlog', label: 'Backlog', icon: ListTodo },
     { href: '/agents', label: 'Agents', icon: Boxes },
-    { href: '/profile', label: 'More', icon: Settings },
+    { href: '/profile', label: 'Settings', icon: Settings },
   ]
 
   return (

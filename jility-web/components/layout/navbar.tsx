@@ -3,13 +3,12 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { ThemeSwitcher } from '@/components/theme-switcher'
 import { CommandPalette } from '@/components/command-palette'
 import { ProjectSwitcher } from '@/components/projects/project-switcher'
 import { ProjectFormDialog } from '@/components/projects/project-form-dialog'
 import { useProject } from '@/lib/project-context'
 import { Button } from '@/components/ui/button'
-import { Layers, BarChart3, Boxes, Calendar, Activity, Clock, ChevronDown, ListTodo } from 'lucide-react'
+import { Layers, BarChart3, Boxes, Calendar, Activity, Clock, ChevronDown, ListTodo, Settings } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export function Navbar() {
@@ -102,7 +101,18 @@ export function Navbar() {
             <div className="hidden sm:block">
               <CommandPalette />
             </div>
-            <ThemeSwitcher />
+            <Link href="/profile" className="hidden md:block">
+              <Button
+                variant="ghost"
+                size="sm"
+                className={cn(
+                  'flex items-center gap-2',
+                  pathname === '/profile' && 'bg-accent text-accent-foreground'
+                )}
+              >
+                <Settings className="h-4 w-4" />
+              </Button>
+            </Link>
           </div>
         </div>
       </div>

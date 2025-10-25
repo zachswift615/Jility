@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useAuth, User } from '@/lib/auth-context'
 import { api } from '@/lib/api'
 import { withAuth, WithAuthProps } from '@/lib/with-auth'
+import { ThemeSwitcher } from '@/components/theme-switcher'
 
 interface ApiKey {
   id: string
@@ -101,10 +102,21 @@ function ProfilePage({ user }: WithAuthProps) {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
+    <div className="container mx-auto px-4 py-8 max-w-4xl pb-24 md:pb-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Profile</h1>
-        <p className="text-muted-foreground">Manage your account and API access</p>
+        <h1 className="text-3xl font-bold mb-2">Settings</h1>
+        <p className="text-muted-foreground">Manage your account, preferences, and API access</p>
+      </div>
+
+      {/* Preferences */}
+      <div className="bg-card rounded-lg border p-6 mb-8">
+        <h2 className="text-xl font-semibold mb-4">Preferences</h2>
+        <div className="space-y-4">
+          <div>
+            <label className="text-sm font-medium mb-3 block">Theme</label>
+            <ThemeSwitcher />
+          </div>
+        </div>
       </div>
 
       {/* User Info */}
