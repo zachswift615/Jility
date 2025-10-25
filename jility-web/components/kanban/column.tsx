@@ -21,7 +21,7 @@ export function Column({ status, tickets, onCreateTicket }: ColumnProps) {
   const ticketIds = tickets.map((t) => t.id)
 
   return (
-    <div className="flex flex-col w-80 flex-shrink-0">
+    <div className="flex flex-col min-w-[280px] md:min-w-[320px] flex-shrink-0">
       <div className="flex items-center justify-between mb-3 px-2">
         <div className="flex items-center gap-2">
           <h2 className="text-sm font-semibold">

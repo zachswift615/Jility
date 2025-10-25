@@ -120,6 +120,19 @@
   @apply bg-muted-foreground;
 }
 
+/* Touch-friendly horizontal scroll */
+.overflow-x-auto {
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+/* Hide scrollbar on mobile for cleaner look */
+@media (max-width: 768px) {
+  .overflow-x-auto::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 /* Smooth transitions */
 * {
   transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
