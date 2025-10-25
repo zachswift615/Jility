@@ -114,9 +114,9 @@ open http://localhost:3000
 - Node.js 18+ and npm
 - Git
 
-### Quick Start with dev.sh
+### Quick Start with dev.sh ⚡
 
-The easiest way to run Jility in development mode is using the `dev.sh` script:
+The **recommended** way to run Jility in development mode is using the `dev.sh` script. It handles both backend and frontend servers with a single command, displays color-coded interleaved logs, and manages process cleanup automatically.
 
 ```bash
 # Start both backend and frontend servers
@@ -132,9 +132,16 @@ The easiest way to run Jility in development mode is using the `dev.sh` script:
 ./dev.sh stop
 ```
 
-**Ports:**
+**What `dev.sh start` does:**
+- ✅ Automatically cleans up any processes on ports 3900/3901
+- ✅ Starts the Rust backend on port 3900
+- ✅ Starts the Next.js frontend on port 3901
+- ✅ Shows color-coded logs: 🔵 `[backend]` and 🟢 `[frontend]`
+- ✅ Handles graceful shutdown with Ctrl+C
+
+**Access points:**
 - Backend API: `http://localhost:3900`
-- Frontend UI: `http://localhost:3901`
+- Frontend UI: `http://localhost:3901` ← **Open this in your browser**
 
 ### Manual Development Setup
 
@@ -214,9 +221,35 @@ jility/
 
 ## Documentation
 
-- **[Wireframes](jility-wireframes.html)** - Interactive UI mockups showing all key screens
-- **[Project Plan](jility-project-plan.md)** - Complete development roadmap with 55 tickets across 4 phases
-- **[CLI Guide](jility-cli-collaboration-guide.md)** - Comprehensive examples of human/agent collaboration
+### Getting Started Guides
+- **[Quick Start](docs/guides/QUICK_START.md)** - Get up and running in 5 minutes
+- **[User Guide](docs/guides/USER_GUIDE.md)** - Comprehensive user documentation
+- **[Build Guide](docs/guides/BUILD_GUIDE.md)** - Building Jility from source
+- **[Quick Reference](docs/guides/QUICK_REFERENCE.md)** - Command reference cheat sheet
+
+### API Documentation
+- **[API Reference](docs/api/API.md)** - Complete REST API documentation
+- **[Search API](docs/api/SEARCH_DOCUMENTATION.md)** - Advanced search functionality
+
+### Architecture & Design
+- **[Wireframes](docs/jility-wireframes.html)** - Interactive UI mockups showing all key screens
+- **[Project Plan](docs/jility-project-plan.md)** - Complete development roadmap with 55 tickets across 4 phases
+- **[CLI Collaboration Guide](docs/jility-cli-collaboration-guide.md)** - Human/agent collaboration examples
+- **[Database Schema](docs/database-schema-design.md)** - Database design and entity relationships
+- **[MCP Protocol Design](docs/mcp-protocol-design.md)** - Model Context Protocol implementation
+- **[Versioning System](docs/versioning-system-design.md)** - Ticket description versioning design
+
+### Implementation Documentation
+- **[Phase 3 Complete](docs/implementation/PHASE_3_COMPLETE.md)** - Web UI implementation summary
+- **[Phase 4 Complete](docs/implementation/PHASE_4_COMPLETE.md)** - Search and sprint features
+- **[Authentication](docs/implementation/AUTHENTICATION_IMPLEMENTATION.md)** - JWT authentication system
+- **[Database](docs/implementation/DATABASE_IMPLEMENTATION.md)** - Database migrations and schema
+- **[Sprint Management](docs/implementation/SPRINT_MANAGEMENT_IMPLEMENTATION.md)** - Sprint planning features
+- **[Search Implementation](docs/implementation/SEARCH_IMPLEMENTATION_SUMMARY.md)** - Full-text search with FTS5
+
+### Testing
+- **[Testing Guide](docs/testing/TESTING.md)** - How to run and write tests
+- **[MCP Server Testing](docs/testing/MCP_SERVER_TESTING.md)** - Testing the MCP server integration
 
 ---
 
