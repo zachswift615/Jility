@@ -28,30 +28,30 @@ export function CommentsSection({ comments, onAddComment }: CommentsSectionProps
   }
 
   return (
-    <div className="space-y-4">
+    <div className="mt-6 md:mt-8 space-y-3 md:space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold flex items-center gap-2">
-          <MessageSquare className="h-5 w-5" />
+        <h2 className="text-base md:text-lg font-semibold flex items-center gap-2">
+          <MessageSquare className="h-4 w-4 md:h-5 md:w-5" />
           Comments ({comments.length})
         </h2>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-3 md:space-y-4">
         {comments.map((comment) => (
-          <div key={comment.id} className="flex gap-3">
-            <Avatar className="h-8 w-8">
+          <div key={comment.id} className="flex gap-2 md:gap-3">
+            <Avatar className="h-8 w-8 md:h-10 md:w-10 flex-shrink-0">
               <AvatarFallback className="text-xs">
                 {comment.author.slice(0, 2).toUpperCase()}
               </AvatarFallback>
             </Avatar>
-            <div className="flex-1 space-y-1">
+            <div className="flex-1 min-w-0 space-y-1">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium">{comment.author}</span>
+                <span className="text-xs md:text-sm font-medium">{comment.author}</span>
                 <span className="text-xs text-muted-foreground">
                   {formatDateTime(comment.created_at)}
                 </span>
               </div>
-              <div className="text-sm prose prose-sm max-w-none dark:prose-invert">
+              <div className="text-xs md:text-sm prose prose-sm max-w-none dark:prose-invert">
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>
                   {comment.content}
                 </ReactMarkdown>
@@ -67,11 +67,11 @@ export function CommentsSection({ comments, onAddComment }: CommentsSectionProps
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
             placeholder="Write a comment (Markdown supported)..."
-            className="min-h-[100px]"
+            className="min-h-[100px] text-sm"
             autoFocus
           />
           <div className="flex gap-2">
-            <Button size="sm" onClick={handleSubmit}>
+            <Button size="sm" onClick={handleSubmit} className="text-xs md:text-sm">
               Comment
             </Button>
             <Button
@@ -81,13 +81,14 @@ export function CommentsSection({ comments, onAddComment }: CommentsSectionProps
                 setNewComment('')
                 setIsAdding(false)
               }}
+              className="text-xs md:text-sm"
             >
               Cancel
             </Button>
           </div>
         </div>
       ) : (
-        <Button variant="outline" onClick={() => setIsAdding(true)}>
+        <Button variant="outline" onClick={() => setIsAdding(true)} className="text-xs md:text-sm">
           Add Comment
         </Button>
       )}

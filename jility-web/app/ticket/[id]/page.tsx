@@ -78,16 +78,15 @@ export default function TicketPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-5xl">
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => router.push('/board')}
-        className="mb-6"
+    <div className="container mx-auto px-3 md:px-6 py-4 md:py-8 max-w-5xl">
+      {/* Mobile back button */}
+      <button
+        onClick={() => router.back()}
+        className="flex md:hidden items-center gap-2 text-sm text-muted-foreground mb-4"
       >
-        <ArrowLeft className="h-4 w-4 mr-2" />
-        Back to Board
-      </Button>
+        <ArrowLeft className="h-4 w-4" />
+        Back
+      </button>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">

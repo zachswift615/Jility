@@ -34,18 +34,18 @@ export function TicketHeader({ ticket, onUpdateTitle }: TicketHeaderProps) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 md:space-y-4">
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1">
-          <div className="flex items-center gap-3 mb-2">
-            <span className="text-sm text-muted-foreground font-mono">
+          <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-2">
+            <span className="text-xs md:text-sm text-muted-foreground font-mono">
               {ticket.number}
             </span>
-            <Badge variant={ticket.status as any}>
+            <Badge variant={ticket.status as any} className="text-xs">
               {getStatusLabel(ticket.status)}
             </Badge>
             {ticket.story_points && (
-              <span className="text-sm text-muted-foreground">
+              <span className="text-xs md:text-sm text-muted-foreground">
                 {ticket.story_points} story points
               </span>
             )}
@@ -57,13 +57,13 @@ export function TicketHeader({ ticket, onUpdateTitle }: TicketHeaderProps) {
               onChange={(e) => setTitle(e.target.value)}
               onBlur={handleSave}
               onKeyDown={handleKeyDown}
-              className="text-2xl font-bold h-auto py-1"
+              className="text-xl md:text-2xl font-bold h-auto py-1"
               autoFocus
             />
           ) : (
             <h1
               onClick={() => setIsEditing(true)}
-              className="text-2xl font-bold cursor-pointer hover:text-primary transition-colors"
+              className="text-xl md:text-3xl font-bold leading-tight cursor-pointer hover:text-primary transition-colors"
             >
               {ticket.title}
             </h1>
@@ -71,7 +71,7 @@ export function TicketHeader({ ticket, onUpdateTitle }: TicketHeaderProps) {
         </div>
       </div>
 
-      <div className="flex items-center gap-6 text-sm text-muted-foreground">
+      <div className="flex flex-wrap gap-3 md:gap-6 text-xs md:text-sm text-muted-foreground">
         <div className="flex items-center gap-2">
           <User className="h-4 w-4" />
           <span>Created by {ticket.created_by}</span>
@@ -84,16 +84,16 @@ export function TicketHeader({ ticket, onUpdateTitle }: TicketHeaderProps) {
 
       {ticket.assignees.length > 0 && (
         <div>
-          <h3 className="text-sm font-medium mb-2">Assignees</h3>
+          <h3 className="text-xs md:text-sm font-medium mb-2">Assignees</h3>
           <div className="flex items-center gap-2">
             {ticket.assignees.map((assignee) => (
               <div key={assignee} className="flex items-center gap-2">
-                <Avatar className="h-8 w-8">
+                <Avatar className="h-7 w-7 md:h-8 md:w-8">
                   <AvatarFallback className="text-xs">
                     {assignee.slice(0, 2).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <span className="text-sm">{assignee}</span>
+                <span className="text-xs md:text-sm">{assignee}</span>
               </div>
             ))}
           </div>
@@ -102,10 +102,10 @@ export function TicketHeader({ ticket, onUpdateTitle }: TicketHeaderProps) {
 
       {ticket.labels.length > 0 && (
         <div>
-          <h3 className="text-sm font-medium mb-2">Labels</h3>
+          <h3 className="text-xs md:text-sm font-medium mb-2">Labels</h3>
           <div className="flex flex-wrap gap-2">
             {ticket.labels.map((label) => (
-              <Badge key={label} variant="secondary">
+              <Badge key={label} variant="secondary" className="text-xs">
                 {label}
               </Badge>
             ))}

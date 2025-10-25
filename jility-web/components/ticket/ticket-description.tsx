@@ -31,17 +31,17 @@ export function TicketDescription({ description, onUpdate }: TicketDescriptionPr
   }
 
   return (
-    <div className="space-y-2">
+    <div className="mt-4 md:mt-6 space-y-3 md:space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Description</h2>
+        <h2 className="text-base md:text-lg font-semibold">Description</h2>
         {!isEditing && onUpdate && (
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setIsEditing(true)}
           >
-            <Edit className="h-4 w-4 mr-2" />
-            Edit
+            <Edit className="h-4 w-4 md:mr-2" />
+            <span className="hidden md:inline">Edit</span>
           </Button>
         )}
       </div>
@@ -66,7 +66,7 @@ export function TicketDescription({ description, onUpdate }: TicketDescriptionPr
           </div>
         </div>
       ) : (
-        <div className="prose prose-sm max-w-none dark:prose-invert">
+        <div className="prose prose-sm md:prose max-w-none dark:prose-invert p-3 md:p-4 bg-muted rounded-lg">
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
             rehypePlugins={[rehypeHighlight]}
