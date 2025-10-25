@@ -17,7 +17,7 @@ import { BacklogSection } from './backlog-section'
 import { BacklogTicketItem } from './backlog-ticket-item'
 import { QuickAddInput } from './quick-add-input'
 import { Button } from '@/components/ui/button'
-import { Lightbulb } from 'lucide-react'
+import { Lightbulb, Bot } from 'lucide-react'
 
 type BacklogCategory = 'ready' | 'needs_estimation' | 'ideas'
 
@@ -183,8 +183,10 @@ export function BacklogView() {
                   variant="outline"
                   size="sm"
                   disabled={groupedTickets.needs_estimation.length === 0}
+                  className="flex items-center gap-1"
                 >
-                  🤖 AI Estimate
+                  <Bot className="h-4 w-4" />
+                  AI Estimate
                 </Button>
               }
             >
