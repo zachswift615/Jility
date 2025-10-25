@@ -10,16 +10,13 @@ name = "jility-mcp"
 path = "src/main.rs"
 
 [dependencies]
-# Core
-jility-core.workspace = true
-
 # MCP
-rmcp = "0.1"
+rmcp = { version = "0.1", features = ["macros", "server"] }
 schemars = "0.8"
 
-# Database
-sea-orm.workspace = true
-uuid.workspace = true
+# HTTP Client
+reqwest = { version = "0.11", features = ["json"] }
+urlencoding = "2.1"
 
 # Utilities
 anyhow.workspace = true

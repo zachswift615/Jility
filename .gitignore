@@ -23,3 +23,11 @@ target
 # OS
 Thumbs.db.workshop
 .worktrees/
+.playwright-mcp
+.claude/mcp_settings.json.disabled
+.mcp-config-backups/
+.mcp-config.json.disabled
+.mcp.json
+index.rust.scip
+index.rust.scip.meta
+.mcp-config.json

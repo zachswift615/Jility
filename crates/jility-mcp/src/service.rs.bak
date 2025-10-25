@@ -1,6 +1,7 @@
 use rmcp::{
     ServerHandler,
-    model::{Implementation, InitializeResult, ProtocolVersion, ServerCapabilities, ToolsCapability},
+    handler::server::tool::Parameters,
+    model::{Implementation, InitializeResult, ProtocolVersion, ServerCapabilities},
     tool, tool_box,
 };
 use reqwest::Client;
@@ -41,14 +42,7 @@ impl JilityService {
     fn build_request(&self, method: reqwest::Method, url: String) -> reqwest::RequestBuilder {
         let mut request = self.client.request(method, &url);
         if let Some(token) = &self.auth_token {
-            // Support both JWT tokens and API keys
-            if token.starts_with("jil_") {
-                // API key format - send directly in Authorization header
-                request = request.header("Authorization", token);
-            } else {
-                // JWT token format
-                request = request.header("Authorization", format!("Bearer {}", token));
-            }
+            request = request.header("Authorization", format!("Bearer {}", token));
         }
         request
     }
@@ -59,29 +53,23 @@ impl JilityService {
     )]
     pub async fn create_ticket(
         &self,
-        #[tool(param)] title: String,
-        #[tool(param)] description: Option<String>,
-        #[tool(param)] story_points: Option<i32>,
-        #[tool(param)] status: Option<String>,
-        #[tool(param)] assignees: Option<Vec<String>>,
-        #[tool(param)] labels: Option<Vec<String>>,
-        #[tool(param)] parent_id: Option<String>,
-        #[tool(param)] epic_id: Option<String>,
+        #[tool(param)] params: Parameters<CreateTicketParams>,
     ) -> Result<String, String> {
+        let params = params.0;
 
         let response = self.build_request(
             reqwest::Method::POST,
             format!("{}/tickets", self.api_base_url)
         )
             .json(&json!({
-                "title": title,
-                "description": description.unwrap_or_default(),
-                "story_points": story_points,
-                "status": status.unwrap_or_else(|| "backlog".to_string()),
-                "assignees": assignees.unwrap_or_default(),
-                "labels": labels.unwrap_or_default(),
-                "parent_id": parent_id,
-                "epic_id": epic_id,
+                "title": params.title,
+                "description": params.description.unwrap_or_default(),
+                "story_points": params.story_points,
+                "status": params.status.unwrap_or_else(|| "backlog".to_string()),
+                "assignees": params.assignees.unwrap_or_default(),
+                "labels": params.labels.unwrap_or_default(),
+                "parent_id": params.parent_id,
+                "epic_id": params.epic_id,
             }))
             .send()
             .await
@@ -126,8 +114,9 @@ impl JilityService {
     )]
     pub async fn create_tickets_batch(
         &self,
-        #[tool(aggr)] params: CreateTicketsBatchParams,
+        #[tool(param)] params: Parameters<CreateTicketsBatchParams>,
     ) -> Result<String, String> {
+        let params = params.0;
         let mut created_tickets = Vec::new();
 
         for ticket_params in params.tickets {
@@ -178,17 +167,18 @@ impl JilityService {
     )]
     pub async fn get_ticket(
         &self,
-        #[tool(param)] ticket_id: String,
+        #[tool(param)] params: Parameters<GetTicketParams>,
     ) -> Result<String, String> {
+        let params = params.0;
 
         let response = self.client
-            .get(format!("{}/tickets/{}", self.api_base_url, ticket_id))
+            .get(format!("{}/tickets/{}", self.api_base_url, params.ticket_id))
             .send()
             .await
             .map_err(|e| format!("Failed to get ticket: {}", e))?;
 
         if !response.status().is_success() {
-            return Err(format!("Ticket not found: {}", ticket_id));
+            return Err(format!("Ticket not found: {}", params.ticket_id));
         }
 
         let data: serde_json::Value = response.json().await
@@ -226,24 +216,19 @@ impl JilityService {
     )]
     pub async fn list_tickets(
         &self,
-        #[tool(param)] status: Option<Vec<String>>,
-        #[tool(param)] assignee: Option<String>,
-        #[tool(param)] labels: Option<Vec<String>>,
-        #[tool(param)] parent_id: Option<String>,
-        #[tool(param)] epic_id: Option<String>,
-        #[tool(param)] unassigned: Option<bool>,
-        #[tool(param)] limit: Option<u64>,
+        #[tool(param)] params: Parameters<ListTicketsParams>,
     ) -> Result<String, String> {
+        let params = params.0;
 
         let mut url = format!("{}/tickets", self.api_base_url);
         let mut query_params = Vec::new();
 
-        if let Some(status) = &status {
+        if let Some(status) = &params.status {
             for s in status {
                 query_params.push(format!("status={}", s));
             }
         }
-        if let Some(assignee) = &assignee {
+        if let Some(assignee) = &params.assignee {
             query_params.push(format!("assignee={}", assignee));
         }
 
@@ -271,11 +256,10 @@ impl JilityService {
 
         let mut output = format!("📋 Found {} tickets\n\n", tickets.len());
 
-        for ticket in tickets.iter().take(limit.unwrap_or(50) as usize) {
+        for ticket in tickets.iter().take(params.limit as usize) {
             output.push_str(&format!(
-                "- {} [ID: {}]: {} ({})\n",
+                "- {}: {} ({})\n",
                 ticket["number"].as_str().unwrap_or("?"),
-                ticket["id"].as_str().unwrap_or("?"),
                 ticket["title"].as_str().unwrap_or("?"),
                 ticket["status"].as_str().unwrap_or("?")
             ));
@@ -290,30 +274,30 @@ impl JilityService {
     )]
     pub async fn claim_ticket(
         &self,
-        #[tool(param)] ticket_id: String,
-        #[tool(param)] message: Option<String>,
+        #[tool(param)] params: Parameters<ClaimTicketParams>,
     ) -> Result<String, String> {
+        let params = params.0;
 
         // Assign to "agent"
         let response = self.client
-            .post(format!("{}/tickets/{}/assign", self.api_base_url, ticket_id))
+            .post(format!("{}/tickets/{}/assign", self.api_base_url, params.ticket_id))
             .json(&json!({ "assignee": "agent" }))
             .send()
             .await
             .map_err(|e| format!("Failed to claim ticket: {}", e))?;
 
         if !response.status().is_success() {
-            return Err(format!("Failed to claim ticket: {}", ticket_id));
+            return Err(format!("Failed to claim ticket: {}", params.ticket_id));
         }
 
         // Update status to in_progress
         let _ = self.client
-            .patch(format!("{}/tickets/{}/status", self.api_base_url, ticket_id))
+            .patch(format!("{}/tickets/{}/status", self.api_base_url, params.ticket_id))
             .json(&json!({ "status": "in_progress" }))
             .send()
             .await;
 
-        Ok(format!("✅ Claimed {} and assigned to agent", ticket_id))
+        Ok(format!("✅ Claimed {} and assigned to agent", params.ticket_id))
     }
 
     /// Precisely edit ticket description
@@ -322,8 +306,9 @@ impl JilityService {
     )]
     pub async fn update_description(
         &self,
-        #[tool(aggr)] params: UpdateDescriptionParams,
+        #[tool(param)] params: Parameters<UpdateDescriptionParams>,
     ) -> Result<String, String> {
+        let params = params.0;
 
         let response = self.client
             .patch(format!("{}/tickets/{}/description", self.api_base_url, params.ticket_id))
@@ -351,26 +336,22 @@ impl JilityService {
     )]
     pub async fn update_status(
         &self,
-        #[tool(param)] ticket_id: String,
-        #[tool(param)] status: String,
-        #[tool(param)] message: Option<String>,
+        #[tool(param)] params: Parameters<UpdateStatusParams>,
     ) -> Result<String, String> {
+        let params = params.0;
 
-        let response = self.build_request(
-            reqwest::Method::PATCH,
-            format!("{}/tickets/{}/status", self.api_base_url, ticket_id)
-        )
-            .json(&json!({ "status": status }))
+        let response = self.client
+            .patch(format!("{}/tickets/{}/status", self.api_base_url, params.ticket_id))
+            .json(&json!({ "status": params.status }))
             .send()
             .await
             .map_err(|e| format!("Failed to update status: {}", e))?;
 
         if !response.status().is_success() {
-            let error_text = response.text().await.unwrap_or_else(|_| "Unknown error".to_string());
-            return Err(format!("Failed to update status: {}", error_text));
+            return Err("Failed to update status".to_string());
         }
 
-        Ok(format!("✅ Moved {} to {}", ticket_id, status))
+        Ok(format!("✅ Moved {} to {}", params.ticket_id, params.status))
     }
 
     /// Add comment to ticket
@@ -379,15 +360,15 @@ impl JilityService {
     )]
     pub async fn add_comment(
         &self,
-        #[tool(param)] ticket_id: String,
-        #[tool(param)] content: String,
+        #[tool(param)] params: Parameters<AddCommentParams>,
     ) -> Result<String, String> {
+        let params = params.0;
 
         let response = self.client
-            .post(format!("{}/tickets/{}/comments", self.api_base_url, ticket_id))
+            .post(format!("{}/tickets/{}/comments", self.api_base_url, params.ticket_id))
             .json(&json!({
                 "author": "agent",
-                "content": content
+                "content": params.content
             }))
             .send()
             .await
@@ -397,7 +378,7 @@ impl JilityService {
             return Err("Failed to add comment".to_string());
         }
 
-        Ok(format!("✅ Added comment to {}", ticket_id))
+        Ok(format!("✅ Added comment to {}", params.ticket_id))
     }
 
     /// Assign or reassign ticket
@@ -406,14 +387,13 @@ impl JilityService {
     )]
     pub async fn assign_ticket(
         &self,
-        #[tool(param)] ticket_id: String,
-        #[tool(param)] assignees: Vec<String>,
-        #[tool(param)] message: Option<String>,
+        #[tool(param)] params: Parameters<AssignTicketParams>,
     ) -> Result<String, String> {
+        let params = params.0;
 
-        for assignee in &assignees {
+        for assignee in &params.assignees {
             let response = self.client
-                .post(format!("{}/tickets/{}/assign", self.api_base_url, ticket_id))
+                .post(format!("{}/tickets/{}/assign", self.api_base_url, params.ticket_id))
                 .json(&json!({ "assignee": assignee }))
                 .send()
                 .await
@@ -426,8 +406,8 @@ impl JilityService {
 
         Ok(format!(
             "✅ Assigned {} to {}",
-            ticket_id,
-            assignees.join(", ")
+            params.ticket_id,
+            params.assignees.join(", ")
         ))
     }
 
@@ -437,16 +417,15 @@ impl JilityService {
     )]
     pub async fn link_commit(
         &self,
-        #[tool(param)] ticket_id: String,
-        #[tool(param)] commit_hash: String,
-        #[tool(param)] commit_message: Option<String>,
+        #[tool(param)] params: Parameters<LinkCommitParams>,
     ) -> Result<String, String> {
+        let params = params.0;
 
         let response = self.client
-            .post(format!("{}/tickets/{}/commits", self.api_base_url, ticket_id))
+            .post(format!("{}/tickets/{}/commits", self.api_base_url, params.ticket_id))
             .json(&json!({
-                "commit_hash": commit_hash,
-                "commit_message": commit_message,
+                "commit_hash": params.commit_hash,
+                "commit_message": params.commit_message,
                 "linked_by": "agent"
             }))
             .send()
@@ -459,7 +438,7 @@ impl JilityService {
 
         Ok(format!(
             "✅ Linked commit {} to {}",
-            commit_hash, ticket_id
+            params.commit_hash, params.ticket_id
         ))
     }
 
@@ -469,13 +448,13 @@ impl JilityService {
     )]
     pub async fn add_dependency(
         &self,
-        #[tool(param)] ticket_id: String,
-        #[tool(param)] depends_on: String,
+        #[tool(param)] params: Parameters<AddDependencyParams>,
     ) -> Result<String, String> {
+        let params = params.0;
 
         let response = self.client
-            .post(format!("{}/tickets/{}/dependencies", self.api_base_url, ticket_id))
-            .json(&json!({ "depends_on_id": depends_on }))
+            .post(format!("{}/tickets/{}/dependencies", self.api_base_url, params.ticket_id))
+            .json(&json!({ "depends_on_id": params.depends_on }))
             .send()
             .await
             .map_err(|e| format!("Failed to add dependency: {}", e))?;
@@ -486,7 +465,7 @@ impl JilityService {
 
         Ok(format!(
             "✅ Added dependency: {} depends on {}",
-            ticket_id, depends_on
+            params.ticket_id, params.depends_on
         ))
     }
 
@@ -496,14 +475,14 @@ impl JilityService {
     )]
     pub async fn remove_dependency(
         &self,
-        #[tool(param)] ticket_id: String,
-        #[tool(param)] depends_on: String,
+        #[tool(param)] params: Parameters<RemoveDependencyParams>,
     ) -> Result<String, String> {
+        let params = params.0;
 
         let response = self.client
             .delete(format!(
                 "{}/tickets/{}/dependencies/{}",
-                self.api_base_url, ticket_id, depends_on
+                self.api_base_url, params.ticket_id, params.depends_on
             ))
             .send()
             .await
@@ -515,7 +494,7 @@ impl JilityService {
 
         Ok(format!(
             "✅ Removed dependency: {} no longer depends on {}",
-            ticket_id, depends_on
+            params.ticket_id, params.depends_on
         ))
     }
 
@@ -525,11 +504,12 @@ impl JilityService {
     )]
     pub async fn get_dependency_graph(
         &self,
-        #[tool(param)] ticket_id: String,
+        #[tool(param)] params: Parameters<GetDependencyGraphParams>,
     ) -> Result<String, String> {
+        let params = params.0;
 
         let response = self.client
-            .get(format!("{}/tickets/{}", self.api_base_url, ticket_id))
+            .get(format!("{}/tickets/{}", self.api_base_url, params.ticket_id))
             .send()
             .await
             .map_err(|e| format!("Failed to get ticket: {}", e))?;
@@ -549,7 +529,7 @@ impl JilityService {
             "📊 Dependency graph for {}\n\n\
              **Dependencies (blocks):** {}\n\
              **Dependents (blocked by):** {}",
-            ticket_id,
+            params.ticket_id,
             deps.len(),
             dependents.len()
         ))
@@ -570,8 +550,9 @@ impl JilityService {
     )]
     pub async fn create_from_template(
         &self,
-        #[tool(aggr)] params: CreateFromTemplateParams,
+        #[tool(param)] params: Parameters<CreateFromTemplateParams>,
     ) -> Result<String, String> {
+        let params = params.0;
         Ok(format!(
             "📋 Template creation not yet supported\n\n\
              Requested template: {}",
@@ -585,15 +566,15 @@ impl JilityService {
     )]
     pub async fn search_tickets(
         &self,
-        #[tool(param)] query: String,
-        #[tool(param)] limit: Option<u64>,
+        #[tool(param)] params: Parameters<SearchTicketsParams>,
     ) -> Result<String, String> {
+        let params = params.0;
 
         let response = self.client
             .get(format!("{}/tickets/search?q={}&limit={}",
                 self.api_base_url,
-                urlencoding::encode(&query),
-                limit.unwrap_or(20)
+                urlencoding::encode(&params.query),
+                params.limit
             ))
             .send()
             .await
@@ -607,10 +588,10 @@ impl JilityService {
             .map_err(|e| format!("Failed to parse response: {}", e))?;
 
         if tickets.is_empty() {
-            return Ok(format!("🔍 No tickets found matching '{}'", query));
+            return Ok(format!("🔍 No tickets found matching '{}'", params.query));
         }
 
-        let mut output = format!("🔍 Found {} tickets matching '{}'\n\n", tickets.len(), query);
+        let mut output = format!("🔍 Found {} tickets matching '{}'\n\n", tickets.len(), params.query);
 
         for ticket in tickets {
             output.push_str(&format!(
@@ -668,12 +649,7 @@ impl ServerHandler for JilityService {
     fn get_info(&self) -> InitializeResult {
         InitializeResult {
             protocol_version: ProtocolVersion::default(),
-            capabilities: ServerCapabilities {
-                tools: Some(ToolsCapability {
-                    list_changed: None,
-                }),
-                ..Default::default()
-            },
+            capabilities: ServerCapabilities::default(),
             server_info: Implementation {
                 name: "jility-mcp".to_string(),
                 version: env!("CARGO_PKG_VERSION").to_string(),

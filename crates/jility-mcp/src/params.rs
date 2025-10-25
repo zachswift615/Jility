@@ -2,9 +2,10 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 /// Parameters for creating a new ticket
-#[derive(Debug, Deserialize, JsonSchema)]
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
 pub struct CreateTicketParams {
-    pub title: String,
+    #[serde(default)]
+    pub title: Option<String>,
     #[serde(default)]
     pub description: Option<String>,
     #[serde(default)]
@@ -22,7 +23,7 @@ pub struct CreateTicketParams {
 }
 
 /// Parameters for creating multiple tickets at once
-#[derive(Debug, Deserialize, JsonSchema)]
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
 pub struct CreateTicketsBatchParams {
     pub tickets: Vec<CreateTicketParams>,
     #[serde(default)]
@@ -30,13 +31,13 @@ pub struct CreateTicketsBatchParams {
 }
 
 /// Parameters for getting a ticket
-#[derive(Debug, Deserialize, JsonSchema)]
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
 pub struct GetTicketParams {
     pub ticket_id: String,
 }
 
 /// Parameters for listing tickets with filters
-#[derive(Debug, Deserialize, JsonSchema)]
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
 pub struct ListTicketsParams {
     #[serde(default)]
     pub status: Option<Vec<String>>,
@@ -59,7 +60,7 @@ fn default_limit() -> u64 {
 }
 
 /// Parameters for claiming a ticket
-#[derive(Debug, Deserialize, JsonSchema)]
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
 pub struct ClaimTicketParams {
     pub ticket_id: String,
     #[serde(default)]
@@ -77,8 +78,20 @@ pub enum EditOperation {
     ReplaceSection,
 }
 
+impl std::fmt::Display for EditOperation {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            EditOperation::ReplaceAll => write!(f, "replace_all"),
+            EditOperation::Append => write!(f, "append"),
+            EditOperation::Prepend => write!(f, "prepend"),
+            EditOperation::ReplaceLines => write!(f, "replace_lines"),
+            EditOperation::ReplaceSection => write!(f, "replace_section"),
+        }
+    }
+}
+
 /// Parameters for updating ticket description
-#[derive(Debug, Deserialize, JsonSchema)]
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
 pub struct UpdateDescriptionParams {
     pub ticket_id: String,
     pub operation: EditOperation,
@@ -94,7 +107,7 @@ pub struct UpdateDescriptionParams {
 }
 
 /// Parameters for updating ticket status
-#[derive(Debug, Deserialize, JsonSchema)]
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
 pub struct UpdateStatusParams {
     pub ticket_id: String,
     pub status: String,
@@ -103,14 +116,14 @@ pub struct UpdateStatusParams {
 }
 
 /// Parameters for adding a comment
-#[derive(Debug, Deserialize, JsonSchema)]
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
 pub struct AddCommentParams {
     pub ticket_id: String,
     pub content: String,
 }
 
 /// Parameters for assigning a ticket
-#[derive(Debug, Deserialize, JsonSchema)]
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
 pub struct AssignTicketParams {
     pub ticket_id: String,
     pub assignees: Vec<String>,
@@ -119,7 +132,7 @@ pub struct AssignTicketParams {
 }
 
 /// Parameters for linking a git commit
-#[derive(Debug, Deserialize, JsonSchema)]
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
 pub struct LinkCommitParams {
     pub ticket_id: String,
     pub commit_hash: String,
@@ -128,27 +141,27 @@ pub struct LinkCommitParams {
 }
 
 /// Parameters for adding a dependency
-#[derive(Debug, Deserialize, JsonSchema)]
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
 pub struct AddDependencyParams {
     pub ticket_id: String,
     pub depends_on: String,
 }
 
 /// Parameters for removing a dependency
-#[derive(Debug, Deserialize, JsonSchema)]
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
 pub struct RemoveDependencyParams {
     pub ticket_id: String,
     pub depends_on: String,
 }
 
 /// Parameters for getting dependency graph
-#[derive(Debug, Deserialize, JsonSchema)]
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
 pub struct GetDependencyGraphParams {
     pub ticket_id: String,
 }
 
 /// Parameters for searching tickets
-#[derive(Debug, Deserialize, JsonSchema)]
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
 pub struct SearchTicketsParams {
     pub query: String,
     #[serde(default = "default_search_limit")]
@@ -160,11 +173,11 @@ fn default_search_limit() -> u64 {
 }
 
 /// Parameters for listing templates
-#[derive(Debug, Deserialize, JsonSchema)]
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
 pub struct ListTemplatesParams {}
 
 /// Parameters for creating from template
-#[derive(Debug, Deserialize, JsonSchema)]
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
 pub struct CreateFromTemplateParams {
     pub template: String,
     pub variables: serde_json::Value,

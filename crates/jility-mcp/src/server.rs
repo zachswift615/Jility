@@ -1,6 +1,5 @@
 use anyhow::{Context, Result};
 use rmcp::ServiceExt;
-use std::path::PathBuf;
 use tracing::{info, error};
 
 use crate::service::JilityService;
@@ -8,10 +7,9 @@ use crate::service::JilityService;
 /// Run the MCP server with stdio transport
 ///
 /// This function:
-/// 1. Gets the current directory (or looks for .jility/ in project root)
-/// 2. Creates the JilityService
-/// 3. Starts the MCP server with stdio transport (reads from stdin, writes to stdout)
-/// 4. Waits for the service to complete
+/// 1. Creates the JilityService (which will make HTTP calls to the backend)
+/// 2. Starts the MCP server with stdio transport (reads from stdin, writes to stdout)
+/// 3. Waits for the service to complete
 pub async fn run_mcp_server() -> Result<()> {
     // Initialize tracing for debugging (logs to stderr, not stdout which is used for MCP protocol)
     tracing_subscriber::fmt()
@@ -24,18 +22,8 @@ pub async fn run_mcp_server() -> Result<()> {
 
     info!("Starting Jility MCP server");
 
-    // Get current directory as project root
-    let current_dir = std::env::current_dir()
-        .context("Failed to get current directory")?;
-
-    info!("Project root: {}", current_dir.display());
-
-    // TODO: Connect to database
-    // let db_path = current_dir.join(".jility/data.db");
-    // let db = connect_to_database(&db_path).await?;
-
     // Create the service
-    let service = JilityService::new(current_dir)
+    let service = JilityService::new()
         .context("Failed to create Jility service")?;
 
     info!("Jility MCP service created successfully");
