@@ -44,8 +44,8 @@ export function BacklogTicketItem({ ticket, isDragging = false }: BacklogTicketI
       ref={setNodeRef}
       style={style}
       className={cn(
-        'group p-3 md:p-4 border-b border-gray-200 last:border-b-0 cursor-move transition-colors hover:bg-gray-50',
-        isDragging && 'opacity-50 shadow-lg bg-white'
+        'group p-3 md:p-4 border-b border-border last:border-b-0 cursor-move transition-colors hover:bg-muted/50',
+        isDragging && 'opacity-50 shadow-lg bg-card'
       )}
     >
       <div className="flex items-start gap-3">
@@ -53,7 +53,7 @@ export function BacklogTicketItem({ ticket, isDragging = false }: BacklogTicketI
         <div
           {...listeners}
           {...attributes}
-          className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 mt-1"
+          className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground mt-1"
         >
           <GripVertical className="h-4 w-4" />
         </div>
@@ -62,7 +62,7 @@ export function BacklogTicketItem({ ticket, isDragging = false }: BacklogTicketI
         <div className="flex-1 min-w-0">
           {/* Ticket ID and Labels */}
           <div className="flex items-center gap-2 mb-1.5">
-            <span className="text-xs font-mono text-gray-500">{ticket.number}</span>
+            <span className="text-xs font-mono text-muted-foreground">{ticket.number}</span>
             {ticket.labels.map((label) => (
               <Badge
                 key={label}
@@ -76,14 +76,14 @@ export function BacklogTicketItem({ ticket, isDragging = false }: BacklogTicketI
 
           {/* Title */}
           <div
-            className="text-sm font-medium text-gray-900 mb-2 cursor-pointer hover:text-blue-600"
+            className="text-sm font-medium mb-2 cursor-pointer hover:text-primary"
             onClick={handleClick}
           >
             {ticket.title}
           </div>
 
           {/* Metadata */}
-          <div className="flex items-center gap-4 text-xs text-gray-500">
+          <div className="flex items-center gap-4 text-xs text-muted-foreground">
             {/* Story Points */}
             <div className="flex items-center gap-1">
               <BarChart3 className="h-3.5 w-3.5" />

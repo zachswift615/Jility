@@ -133,7 +133,7 @@ export function BacklogView() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-gray-50 p-3 md:p-6">
+    <div className="flex flex-col h-full p-3 md:p-6">
       <div className="max-w-7xl w-full mx-auto">
         <BacklogToolbar
           totalItems={tickets.length}
@@ -147,7 +147,7 @@ export function BacklogView() {
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
         >
-          <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+          <div className="bg-card border border-border rounded-lg overflow-hidden shadow-sm">
             {/* Ready for Sprint Section */}
             <BacklogSection
               title="Ready for Sprint"
@@ -220,12 +220,12 @@ export function BacklogView() {
         </DndContext>
 
         {/* Tips Section */}
-        <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <div className="flex items-center gap-2 font-semibold text-blue-900 mb-2">
+        <div className="mt-6 bg-muted border border-border rounded-lg p-4">
+          <div className="flex items-center gap-2 font-semibold mb-2">
             <Lightbulb className="h-4 w-4" />
             Backlog Tips
           </div>
-          <ul className="text-sm text-blue-800 space-y-1 ml-6 list-disc">
+          <ul className="text-sm text-muted-foreground space-y-1 ml-6 list-disc">
             <li>Drag tickets to reorder by priority (top = highest priority)</li>
             <li>Use sections to organize tickets by readiness</li>
             <li>Click "Quick Add" or press + anywhere to create tickets fast</li>

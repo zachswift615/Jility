@@ -18,9 +18,9 @@ export function QuickAddInput({ onAdd }: QuickAddInputProps) {
   }
 
   return (
-    <div className="px-4 py-3 bg-gray-50 cursor-text" onClick={() => document.getElementById('quick-add-input')?.focus()}>
+    <div className="px-4 py-3 bg-muted/50 cursor-text" onClick={() => document.getElementById('quick-add-input')?.focus()}>
       <div className="flex items-center gap-3">
-        <Plus className="h-5 w-5 text-gray-500" />
+        <Plus className="h-5 w-5 text-muted-foreground" />
         <input
           id="quick-add-input"
           type="text"
@@ -28,7 +28,7 @@ export function QuickAddInput({ onAdd }: QuickAddInputProps) {
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Quick add ticket (press Enter to create)..."
-          className="flex-1 border-none bg-transparent text-sm outline-none placeholder:text-gray-400"
+          className="flex-1 border-none bg-transparent text-sm outline-none placeholder:text-muted-foreground"
         />
       </div>
     </div>
