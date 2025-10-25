@@ -17,7 +17,7 @@ export function BacklogToolbar({
   onFilterChange,
 }: BacklogToolbarProps) {
   return (
-    <div className="flex flex-col sm:flex-row gap-3 sm:gap-0 sm:items-center sm:justify-between mb-5 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+    <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:items-center sm:justify-between mb-5 p-4 bg-gray-50 border border-gray-200 rounded-lg">
       <div className="flex flex-wrap items-center gap-3">
         <Button variant="outline" size="sm" className="gap-2">
           <Zap className="h-4 w-4" />
