@@ -553,3 +553,140 @@ All MCP tools that return lists support pagination to prevent token limit errors
 - Response includes: `count` (total), `has_more` (boolean), result data
 
 **Example:** On a project with 1,438 functions, `list_functions(limit=100)` returns only 100 results.
+
+
+# Project Context
+
+## Design Workflow
+
+When working on front-end designs:
+
+1. **Make Changes**: Implement the requested design changes
+2. **Visual Validation**: Take a screenshot using Playwright to see the current state
+3. **Compare**: Analyze the screenshot against the design requirements
+4. **Iterate**: If issues are found, make corrections and repeat
+
+## Playwright Usage
+
+- Use Playwright to capture screenshots after making changes
+- Check browser console for errors
+- Test responsive designs by emulating different devices
+- Navigate through different states of the application
+
+## Design Philosophy
+
+### Vision
+Jility is a **lightweight, fast, agent-first** project management tool that makes JIRA seem bloated while being **beautiful enough for design-conscious teams**.
+
+### Core Principles
+
+1. **Mobile-First Design**
+   - Design for mobile screens first, then progressively enhance for larger screens
+   - Use Tailwind's responsive breakpoints: `sm:`, `md:`, `lg:`, `xl:`
+   - Base styles apply to mobile, add breakpoint prefixes for desktop
+   - Touch-friendly targets (minimum 44px tap areas)
+   - Bottom navigation on mobile, sidebar on desktop
+
+2. **Agent-First Interactions**
+   - Optimized for AI coding assistants and automation
+   - Clear, semantic component structure for easy agent navigation
+   - MCP server integration for programmatic access
+   - Ticket metadata designed for agent workflows
+
+3. **Lightweight & Fast**
+   - Minimal dependencies
+   - Fast page loads and interactions
+   - SQLite for local-first development
+   - Real-time updates via WebSockets
+
+4. **Beautiful & Consistent**
+   - Professional design suitable for design-conscious teams
+   - Consistent spacing, typography, and visual hierarchy
+   - Thoughtful use of color and iconography
+   - Smooth transitions and interactions
+
+### Theme System
+
+**CSS Variables for Light and Dark Modes**
+
+Jility uses CSS custom properties (CSS variables) to implement a theme system that seamlessly adapts between light and dark modes. **Always use theme variables instead of hardcoded colors.**
+
+**Theme Variables** (defined in `jility-web/app/globals.css`):
+
+```css
+/* Semantic color tokens */
+--background         /* Page background */
+--foreground         /* Primary text color */
+--card              /* Card/panel backgrounds */
+--card-foreground   /* Text on cards */
+--primary           /* Brand/accent color */
+--primary-foreground /* Text on primary */
+--secondary         /* Secondary backgrounds */
+--secondary-foreground /* Text on secondary */
+--muted             /* Subtle backgrounds */
+--muted-foreground  /* Subtle text */
+--border            /* Border color */
+--input             /* Input borders */
+--ring              /* Focus ring color */
+--destructive       /* Error/danger color */
+```
+
+**Usage in Tailwind CSS:**
+
+```tsx
+// ✅ CORRECT - Uses theme variables
+<div className="bg-card border-border text-foreground">
+<div className="bg-muted text-muted-foreground">
+<button className="bg-primary text-primary-foreground">
+
+// ❌ WRONG - Hardcoded colors break dark mode
+<div className="bg-white border-gray-200 text-gray-900">
+<div className="bg-gray-50 text-gray-600">
+<button className="bg-blue-500 text-white">
+```
+
+**Available Tailwind Classes:**
+- `bg-background`, `bg-foreground`
+- `bg-card`, `text-card-foreground`
+- `bg-primary`, `text-primary-foreground`
+- `bg-secondary`, `text-secondary-foreground`
+- `bg-muted`, `text-muted-foreground`
+- `bg-accent`, `text-accent-foreground`
+- `bg-destructive`, `text-destructive-foreground`
+- `border-border`, `border-input`
+- `ring-ring`
+
+**Status Colors:**
+Custom status colors are also available as CSS variables:
+- `--status-backlog`, `--status-todo`, `--status-in-progress`
+- `--status-review`, `--status-done`, `--status-blocked`
+
+**Why Theme Variables?**
+- **Dark mode support**: Variables automatically change values when `.dark` class is applied
+- **Consistency**: Ensures all components use the same color palette
+- **Maintainability**: Change theme colors in one place (globals.css)
+- **Accessibility**: Proper contrast ratios maintained in both light and dark modes
+
+**Testing Dark Mode:**
+Always test components in both light and dark modes. Use the theme toggle in the navbar to switch modes during development.
+
+### Icon System
+
+- **Library**: [Lucide React](https://lucide.dev)
+- **No emojis**: All icons use Lucide components for consistency and accessibility
+- **Standard sizes**: `h-4 w-4` (16px), `h-5 w-5` (20px), `h-6 w-6` (24px)
+- **Semantic naming**: Choose icons that clearly represent their function
+
+### Typography
+
+- **Font**: System font stack for optimal performance
+- **Headings**: Clear hierarchy using Tailwind's text size utilities
+- **Body text**: `text-sm` for dense information, `text-base` for content
+- **Monospace**: Used for ticket IDs, code, and technical data
+
+### Spacing & Layout
+
+- **Responsive padding**: `p-3 md:p-6` (less padding on mobile)
+- **Consistent gaps**: Use Tailwind's gap utilities (`gap-2`, `gap-4`, etc.)
+- **Grid & Flexbox**: Prefer CSS Grid for 2D layouts, Flexbox for 1D
+- **Max widths**: Use `max-w-7xl` for content containers to prevent ultra-wide layouts
