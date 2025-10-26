@@ -1,0 +1,23 @@
+version: '3.8'
+
+# Ngrok override - use for external testing
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.ngrok.yml up
+services:
+  frontend:
+    env_file:
+      - jility-web/.env.ngrok
+    environment:
+      - BACKEND_URL=http://backend:3900
+
+  ngrok:
+    image: ngrok/ngrok:latest
+    command: http frontend:3901
+    ports:
+      - "4040:4040"  # ngrok web interface
+    environment:
+      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
+    networks:
+      - jility-network
+    depends_on:
+      - frontend
+    restart: unless-stopped

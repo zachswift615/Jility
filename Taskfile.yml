@@ -1,0 +1,176 @@
+version: '3'
+
+vars:
+  COMPOSE_LOCAL: docker-compose.yml
+  COMPOSE_NGROK: docker-compose.yml -f docker-compose.ngrok.yml
+
+tasks:
+  # Start tasks
+  start:
+    desc: Start services in Docker (production)
+    cmds:
+      - docker-compose -f {{.COMPOSE_LOCAL}} up -d
+      - echo "✅ Services started!"
+      - echo "Frontend http://localhost:3901"
+      - echo "Backend http://localhost:3900"
+
+  start-dev:
+    desc: Start services natively with hot reload (no Docker)
+    cmds:
+      - ./dev.sh start
+      - echo "✅ Dev services started with hot reload!"
+      - echo "Use 'task dev-stop' to stop"
+
+  start-ngrok:
+    desc: Start services with ngrok tunnel
+    cmds:
+      - |
+        if [ -z "$NGROK_AUTHTOKEN" ]; then
+          echo "⚠️  NGROK_AUTHTOKEN not set"
+          echo "   Get your token from: https://dashboard.ngrok.com"
+          echo "   Set it with: export NGROK_AUTHTOKEN=your_token"
+          exit 1
+        fi
+      - docker-compose -f {{.COMPOSE_NGROK}} up -d
+      - echo "✅ Services started with ngrok!"
+      - echo "Frontend http://localhost:3901"
+      - echo "Backend http://localhost:3900"
+      - echo "Ngrok UI http://localhost:4040"
+      - sleep 3
+      - task: ngrok-url
+
+  # Stop tasks
+  stop:
+    desc: Stop all Docker services
+    cmds:
+      - docker-compose -f {{.COMPOSE_LOCAL}} down 2>/dev/null || true
+      - docker-compose -f {{.COMPOSE_NGROK}} down 2>/dev/null || true
+      - echo "✅ Docker services stopped"
+      - echo "To stop native dev use task dev-stop"
+
+  # Restart tasks
+  restart:
+    desc: Restart services in local mode
+    cmds:
+      - task: stop
+      - task: start
+
+  restart-dev:
+    desc: Restart native dev services
+    cmds:
+      - task: dev-restart
+
+  restart-ngrok:
+    desc: Restart services in ngrok mode
+    cmds:
+      - task: stop
+      - task: start-ngrok
+
+  # Logs
+  logs:
+    desc: View logs from all services
+    cmds:
+      - docker-compose -f {{.COMPOSE_LOCAL}} logs {{.CLI_ARGS}}
+
+  logs-follow:
+    desc: Follow logs from all services
+    cmds:
+      - docker-compose -f {{.COMPOSE_LOCAL}} logs -f {{.CLI_ARGS}}
+
+  logs-backend:
+    desc: View backend logs
+    cmds:
+      - docker-compose -f {{.COMPOSE_LOCAL}} logs backend {{.CLI_ARGS}}
+
+  logs-frontend:
+    desc: View frontend logs
+    cmds:
+      - docker-compose -f {{.COMPOSE_LOCAL}} logs frontend {{.CLI_ARGS}}
+
+  logs-ngrok:
+    desc: View ngrok logs
+    cmds:
+      - docker-compose -f {{.COMPOSE_NGROK}} logs ngrok {{.CLI_ARGS}}
+
+  # Status
+  status:
+    desc: Show service status
+    cmds:
+      - docker-compose -f {{.COMPOSE_LOCAL}} ps
+
+  # Build
+  build:
+    desc: Build Docker images
+    cmds:
+      - docker-compose -f {{.COMPOSE_LOCAL}} build
+      - echo "✅ Build complete"
+
+  build-clean:
+    desc: Build Docker images without cache
+    cmds:
+      - docker-compose -f {{.COMPOSE_LOCAL}} build --no-cache
+      - echo "✅ Build complete"
+
+  # Clean
+  clean:
+    desc: Remove containers, volumes, and images
+    prompt: This will remove all Jility containers, volumes, and images. Continue?
+    cmds:
+      - docker-compose -f {{.COMPOSE_LOCAL}} down -v 2>/dev/null || true
+      - docker-compose -f {{.COMPOSE_DEV}} down -v 2>/dev/null || true
+      - docker-compose -f {{.COMPOSE_NGROK}} down -v 2>/dev/null || true
+      - docker images | grep jility | awk '{print $3}' | xargs docker rmi -f 2>/dev/null || true
+      - echo "✅ Cleanup complete"
+
+  # Shell access
+  shell-backend:
+    desc: Open shell in backend container
+    cmds:
+      - docker-compose -f {{.COMPOSE_LOCAL}} exec backend sh
+
+  shell-frontend:
+    desc: Open shell in frontend container
+    cmds:
+      - docker-compose -f {{.COMPOSE_LOCAL}} exec frontend sh
+
+  # Ngrok utilities
+  ngrok-url:
+    desc: Get ngrok tunnel URL
+    cmds:
+      - |
+        URL=$(curl -s http://localhost:4040/api/tunnels 2>/dev/null | grep -o '"public_url":"https://[^"]*' | grep -o 'https://[^"]*' | head -1)
+        if [ -n "$URL" ]; then
+          echo "🔗 Ngrok URL: $URL"
+          echo "   Web Interface: http://localhost:4040"
+        else
+          echo "❌ Could not fetch ngrok URL"
+          echo "   Make sure ngrok is running: task start:ngrok"
+        fi
+
+  # Development helpers
+  dev:
+    desc: Start native development servers (without Docker)
+    cmds:
+      - ./dev.sh start
+
+  dev-stop:
+    desc: Stop native development servers
+    cmds:
+      - ./dev.sh stop
+
+  dev-restart:
+    desc: Restart native development servers
+    cmds:
+      - ./dev.sh restart
+
+  # Test & validation
+  test:
+    desc: Run tests (placeholder)
+    cmds:
+      - echo "No tests configured yet"
+
+  # Default task
+  default:
+    desc: Show available tasks
+    cmds:
+      - task --list

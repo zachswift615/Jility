@@ -26,8 +26,10 @@ Thumbs.db.workshop
 .playwright-mcp
 .claude/mcp_settings.json.disabled
 .mcp-config-backups/
-.mcp-config.json.disabled
-.mcp.json
+*mcp-config.json.disabled
+*mcp*json
 index.rust.scip
 index.rust.scip.meta
-.mcp-config.json
+*mcp-config.json
+*mcp.json
+*env*ngrok

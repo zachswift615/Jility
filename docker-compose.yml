@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: jility-server/Dockerfile
+    ports:
+      - "3900:3900"
+    environment:
+      - RUST_LOG=info
+      - DATABASE_URL=sqlite:///app/.jility/data.db?mode=rwc
+      - BIND_ADDRESS=0.0.0.0:3900
+      - JWT_SECRET=${JWT_SECRET:-insecure_default_secret_change_in_production}
+    volumes:
+      - jility-data:/app/.jility
+    networks:
+      - jility-network
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: jility-web
+      dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_API_URL=/api
+        - BACKEND_URL=http://backend:3900
+    ports:
+      - "3901:3901"
+    environment:
+      - NODE_ENV=production
+      - BACKEND_URL=http://backend:3900
+    depends_on:
+      - backend
+    networks:
+      - jility-network
+    restart: unless-stopped
+
+volumes:
+  jility-data:
+
+networks:
+  jility-network:
+    driver: bridge
