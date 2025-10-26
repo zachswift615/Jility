@@ -28,6 +28,9 @@ yarn-error.log*
 .env*.local
 .env
 
+# Commit template env files (like .env.ngrok)
+!.env.ngrok
+
 # vercel
 .vercel
 

@@ -75,7 +75,8 @@ async fn main() -> Result<()> {
             CorsLayer::new()
                 .allow_origin(Any)
                 .allow_methods(Any)
-                .allow_headers(Any),
+                .allow_headers(Any)
+                .allow_credentials(false),
         );
 
     // Start server

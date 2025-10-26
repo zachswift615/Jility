@@ -84,24 +84,62 @@ prefix_output() {
 
 # Show usage
 usage() {
-    echo "Usage: $0 {start|stop|restart|status}"
+    echo "Usage: $0 {start|stop|restart|status} [OPTIONS]"
     echo ""
     echo "Commands:"
     echo "  start   - Start both backend and frontend servers"
     echo "  stop    - Stop both servers gracefully"
     echo "  restart - Restart both servers"
     echo "  status  - Check if servers are running"
+    echo ""
+    echo "Options:"
+    echo "  --config=FILE  - Use specified env file for frontend (default: .env.local)"
+    echo ""
+    echo "Examples:"
+    echo "  $0 start                      # Use default .env.local"
+    echo "  $0 start --config=.env.ngrok  # Use .env.ngrok for ngrok testing"
+    echo "  $0 restart --config=.env.ngrok"
     exit 1
 }
 
+# Parse arguments
+COMMAND=""
+ENV_FILE=".env.local"
+
+for arg in "$@"; do
+    case $arg in
+        --config=*)
+            ENV_FILE="${arg#*=}"
+            shift
+            ;;
+        start|stop|restart|status)
+            COMMAND="$arg"
+            shift
+            ;;
+        *)
+            echo -e "${RED}Unknown argument: $arg${NC}"
+            usage
+            ;;
+    esac
+done
+
 # Check if command provided
-if [ $# -eq 0 ]; then
+if [ -z "$COMMAND" ]; then
     usage
 fi
 
-case "$1" in
+case "$COMMAND" in
     start)
         check_prerequisites
+
+        # Check if custom env file exists
+        if [ "$ENV_FILE" != ".env.local" ]; then
+            if [ ! -f "jility-web/$ENV_FILE" ]; then
+                echo -e "${RED}Error: Config file 'jility-web/$ENV_FILE' not found${NC}"
+                exit 1
+            fi
+            echo -e "${BLUE}ℹ Using config file: $ENV_FILE${NC}"
+        fi
 
         echo "🧹 Cleaning up old processes..."
         kill_port $BACKEND_PORT || true
@@ -126,10 +164,11 @@ case "$1" in
             exit 1
         fi
 
-        echo "🚀 Starting frontend on port $FRONTEND_PORT..."
+        echo "🚀 Starting frontend on port $FRONTEND_PORT with config: $ENV_FILE..."
 
-        # Start frontend
-        (cd jility-web && npm run dev -- -p $FRONTEND_PORT) 2>&1 | prefix_output "frontend" "$GREEN" &
+        # Load env vars from specified file and start frontend
+        # Next.js dev doesn't support --env-file, so we export vars before starting
+        (cd jility-web && set -a && . "./$ENV_FILE" && set +a && npm run dev -- -p $FRONTEND_PORT) 2>&1 | prefix_output "frontend" "$GREEN" &
         FRONTEND_PID_VAL=$!
         echo $FRONTEND_PID_VAL > "$FRONTEND_PID"
 
@@ -193,9 +232,16 @@ case "$1" in
         echo -e "${GREEN}✅ All servers stopped${NC}"
         ;;
     restart)
-        $0 stop
-        sleep 2
-        $0 start
+        # Preserve the config parameter when restarting
+        if [ "$ENV_FILE" != ".env.local" ]; then
+            $0 stop
+            sleep 2
+            $0 start --config="$ENV_FILE"
+        else
+            $0 stop
+            sleep 2
+            $0 start
+        fi
         ;;
     status)
         echo "🔍 Checking server status..."
