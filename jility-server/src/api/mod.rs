@@ -7,6 +7,7 @@ pub mod projects;
 pub mod search;
 pub mod sprints;
 pub mod tickets;
+pub mod workspaces;
 
 use axum::{
     middleware,
@@ -32,6 +33,11 @@ pub fn api_routes() -> (Router<AppState>, Router<AppState>) {
 
     // Protected routes (authentication required)
     let protected_routes = Router::new()
+        // Workspaces
+        .route("/api/workspaces", get(workspaces::list_workspaces))
+        .route("/api/workspaces", post(workspaces::create_workspace))
+        .route("/api/workspaces/:slug", get(workspaces::get_workspace))
+        .route("/api/workspaces/:slug/invite", post(workspaces::invite_member))
         // Auth - protected
         .route("/api/auth/logout", post(auth::logout))
         .route("/api/auth/me", get(auth::get_me))
