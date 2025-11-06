@@ -48,8 +48,13 @@ export function Navbar() {
               <span className="text-lg md:text-xl font-bold">Jility</span>
             </Link>
 
-            {/* Workspace Switcher */}
+            {/* Workspace Switcher - Desktop */}
             <div className="hidden md:block">
+              <WorkspaceSwitcher />
+            </div>
+
+            {/* Workspace Switcher - Mobile */}
+            <div className="md:hidden">
               <WorkspaceSwitcher />
             </div>
 
