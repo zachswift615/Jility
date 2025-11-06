@@ -94,7 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // Fetch workspaces and redirect to workspace URL
       try {
-        const workspacesResponse = await fetch(`${API_BASE}/workspaces`, {
+        const workspacesResponse = await fetch('/api/workspaces', {
           headers: {
             Authorization: `Bearer ${data.token}`,
           },
@@ -159,7 +159,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const authData: AuthResponse = await response.json()
       localStorage.setItem('jility_token', authData.token)
       setUser(authData.user)
-      router.push('/')
+
+      // Fetch workspaces and redirect to workspace URL
+      try {
+        const workspacesResponse = await fetch('/api/workspaces', {
+          headers: {
+            Authorization: `Bearer ${authData.token}`,
+          },
+        })
+
+        if (workspacesResponse.ok) {
+          const workspaces = await workspacesResponse.json()
+          if (workspaces.length > 0) {
+            router.push(`/w/${workspaces[0].slug}/board`)
+            return
+          }
+        }
+
+        // Fallback if workspace fetch fails or no workspaces
+        router.push('/')
+      } catch (workspaceError) {
+        console.error('Failed to fetch workspaces:', workspaceError)
+        router.push('/')
+      }
     } catch (error) {
       throw error
     }

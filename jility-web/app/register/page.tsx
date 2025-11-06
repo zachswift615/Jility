@@ -21,7 +21,29 @@ export default function RegisterPage() {
   // Redirect if already logged in
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
-      router.push('/board')
+      // Fetch workspaces and redirect to workspace URL
+      const redirectToWorkspace = async () => {
+        try {
+          const token = localStorage.getItem('jility_token')
+          const response = await fetch('/api/workspaces', {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          })
+          if (response.ok) {
+            const workspaces = await response.json()
+            if (workspaces.length > 0) {
+              router.push(`/w/${workspaces[0].slug}/board`)
+            } else {
+              router.push('/')
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching workspaces:', error)
+          router.push('/')
+        }
+      }
+      redirectToWorkspace()
     }
   }, [isAuthenticated, isLoading, router])
 
