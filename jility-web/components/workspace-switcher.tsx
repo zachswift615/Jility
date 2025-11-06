@@ -24,7 +24,7 @@ export function WorkspaceSwitcher() {
       <DropdownMenuTrigger asChild>
         <Button
           variant="outline"
-          className="w-[200px] justify-between"
+          className="min-w-[120px] max-w-[200px] h-11 md:h-auto justify-between"
         >
           <span className="truncate">{currentWorkspace.name}</span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
