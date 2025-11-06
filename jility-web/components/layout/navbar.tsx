@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation'
 import { CommandPalette } from '@/components/command-palette'
 import { ProjectSwitcher } from '@/components/projects/project-switcher'
 import { ProjectFormDialog } from '@/components/projects/project-form-dialog'
+import { WorkspaceSwitcher } from '@/components/workspace-switcher'
 import { useProject } from '@/lib/project-context'
 import { Button } from '@/components/ui/button'
 import { Layers, BarChart3, Boxes, Calendar, Activity, Clock, ChevronDown, ListTodo, Settings } from 'lucide-react'
@@ -46,6 +47,11 @@ export function Navbar() {
               </div>
               <span className="text-lg md:text-xl font-bold">Jility</span>
             </Link>
+
+            {/* Workspace Switcher */}
+            <div className="hidden md:block">
+              <WorkspaceSwitcher />
+            </div>
 
             {/* Desktop nav links (hidden on mobile) */}
             <div className="hidden md:flex items-center gap-1">
