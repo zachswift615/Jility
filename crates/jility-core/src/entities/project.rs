@@ -7,6 +7,8 @@ pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub id: Uuid,
 
+    pub workspace_id: Uuid,
+
     pub name: String,
 
     #[sea_orm(column_type = "Text", nullable)]
@@ -36,6 +38,14 @@ pub struct Model {
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
+    #[sea_orm(
+        belongs_to = "super::workspace::Entity",
+        from = "Column::WorkspaceId",
+        to = "super::workspace::Column::Id",
+        on_delete = "Cascade"
+    )]
+    Workspace,
+
     #[sea_orm(has_many = "super::ticket::Entity")]
     Tickets,
 
@@ -52,6 +62,12 @@ impl Related<super::ticket::Entity> for Entity {
 impl Related<super::sprint::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Sprints.def()
+    }
+}
+
+impl Related<super::workspace::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Workspace.def()
     }
 }
 
