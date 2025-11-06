@@ -30,7 +30,7 @@ export default function LoginPage() {
             if (workspaces.length > 0) {
               router.push(`/w/${workspaces[0].slug}/board`)
             } else {
-              router.push('/create-workspace')
+              router.push('/')
             }
           }
         } catch (error) {

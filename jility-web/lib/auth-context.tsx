@@ -93,18 +93,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(data.user)
 
       // Fetch workspaces and redirect to workspace URL
-      const workspacesResponse = await fetch(`${API_BASE}/workspaces`, {
-        headers: {
-          Authorization: `Bearer ${data.token}`,
-        },
-      })
-      const workspaces = await workspacesResponse.json()
+      try {
+        const workspacesResponse = await fetch(`${API_BASE}/workspaces`, {
+          headers: {
+            Authorization: `Bearer ${data.token}`,
+          },
+        })
 
-      if (workspaces.length > 0) {
-        router.push(`/w/${workspaces[0].slug}/board`)
-      } else {
-        // No workspaces - this shouldn't happen if signup creates default workspace
-        router.push('/create-workspace')
+        if (workspacesResponse.ok) {
+          const workspaces = await workspacesResponse.json()
+          if (workspaces.length > 0) {
+            router.push(`/w/${workspaces[0].slug}/board`)
+            return
+          }
+        }
+
+        // Fallback if workspace fetch fails or no workspaces
+        router.push('/')
+      } catch (workspaceError) {
+        console.error('Failed to fetch workspaces:', workspaceError)
+        router.push('/')
       }
     } catch (error) {
       throw error
