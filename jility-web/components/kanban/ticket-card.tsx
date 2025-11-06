@@ -1,6 +1,6 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
+import { useRouter, useParams } from 'next/navigation'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { GripVertical, MessageSquare, GitCommit, Users } from 'lucide-react'
@@ -15,6 +15,8 @@ interface TicketCardProps {
 
 export function TicketCard({ ticket }: TicketCardProps) {
   const router = useRouter()
+  const params = useParams()
+  const slug = params.slug as string
   const {
     attributes,
     listeners,
@@ -35,7 +37,7 @@ export function TicketCard({ ticket }: TicketCardProps) {
       e.preventDefault()
       return
     }
-    router.push(`/ticket/${ticket.id}`)
+    router.push(`/w/${slug}/ticket/${ticket.id}`)
   }
 
   return (
