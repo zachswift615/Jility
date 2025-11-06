@@ -8,6 +8,7 @@ import { ProjectSwitcher } from '@/components/projects/project-switcher'
 import { ProjectFormDialog } from '@/components/projects/project-form-dialog'
 import { WorkspaceSwitcher } from '@/components/workspace-switcher'
 import { useProject } from '@/lib/project-context'
+import { useWorkspace } from '@/lib/workspace-context'
 import { Button } from '@/components/ui/button'
 import { Layers, BarChart3, Boxes, Calendar, Activity, Clock, ChevronDown, ListTodo, Settings } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -15,6 +16,8 @@ import { cn } from '@/lib/utils'
 export function Navbar() {
   const pathname = usePathname()
   const { currentProject } = useProject()
+  const { currentWorkspace } = useWorkspace()
+  const slug = currentWorkspace?.slug || ''
   const [showProjectSwitcher, setShowProjectSwitcher] = useState(false)
   const [showProjectForm, setShowProjectForm] = useState(false)
 
@@ -28,12 +31,12 @@ export function Navbar() {
   }
 
   const links = [
-    { href: '/backlog', label: 'Backlog', icon: ListTodo },
-    { href: '/board', label: 'Board', icon: Layers },
-    { href: '/sprint/planning', label: 'Sprint Planning', icon: Calendar },
-    { href: '/sprint/active', label: 'Active Sprint', icon: Activity },
-    { href: '/sprint/history', label: 'History', icon: Clock },
-    { href: '/agents', label: 'Agents', icon: Boxes },
+    { href: `/w/${slug}/backlog`, label: 'Backlog', icon: ListTodo },
+    { href: `/w/${slug}/board`, label: 'Board', icon: Layers },
+    { href: `/w/${slug}/sprint/planning`, label: 'Sprint Planning', icon: Calendar },
+    { href: `/w/${slug}/sprint/active`, label: 'Active Sprint', icon: Activity },
+    { href: `/w/${slug}/sprint/history`, label: 'History', icon: Clock },
+    { href: `/w/${slug}/agents`, label: 'Agents', icon: Boxes },
   ]
 
   return (
@@ -112,13 +115,13 @@ export function Navbar() {
             <div className="hidden sm:block">
               <CommandPalette />
             </div>
-            <Link href="/profile" className="hidden md:block">
+            <Link href={`/w/${slug}/profile`} className="hidden md:block">
               <Button
                 variant="ghost"
                 size="sm"
                 className={cn(
                   'flex items-center gap-2',
-                  pathname === '/profile' && 'bg-accent text-accent-foreground'
+                  pathname === `/w/${slug}/profile` && 'bg-accent text-accent-foreground'
                 )}
               >
                 <Settings className="h-4 w-4" />
