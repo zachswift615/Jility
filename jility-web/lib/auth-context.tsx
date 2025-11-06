@@ -91,7 +91,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const data: AuthResponse = await response.json()
       localStorage.setItem('jility_token', data.token)
       setUser(data.user)
-      router.push('/')
+
+      // Fetch workspaces and redirect to workspace URL
+      const workspacesResponse = await fetch(`${API_BASE}/workspaces`, {
+        headers: {
+          Authorization: `Bearer ${data.token}`,
+        },
+      })
+      const workspaces = await workspacesResponse.json()
+
+      if (workspaces.length > 0) {
+        router.push(`/w/${workspaces[0].slug}/board`)
+      } else {
+        // No workspaces - this shouldn't happen if signup creates default workspace
+        router.push('/create-workspace')
+      }
     } catch (error) {
       throw error
     }
