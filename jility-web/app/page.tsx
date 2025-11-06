@@ -3,7 +3,9 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
-import { Loader2 } from 'lucide-react'
+import { CreateWorkspaceDialog } from '@/components/create-workspace-dialog'
+import { Button } from '@/components/ui/button'
+import { Loader2, Plus } from 'lucide-react'
 
 interface Workspace {
   id: string
@@ -19,6 +21,7 @@ export default function Home() {
   const [fetchingWorkspaces, setFetchingWorkspaces] = useState(false)
   const [noWorkspaces, setNoWorkspaces] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showCreateDialog, setShowCreateDialog] = useState(false)
 
   useEffect(() => {
     async function handleRedirect() {
@@ -86,19 +89,25 @@ export default function Home() {
   // Show "no workspaces" state
   if (noWorkspaces) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center max-w-md px-4">
-          <h1 className="text-2xl font-bold mb-2">Welcome to Jility</h1>
-          <p className="text-muted-foreground mb-6">
-            You don't have any workspaces yet. Create your first workspace to get started.
-          </p>
-          <div className="p-4 border border-border rounded-lg bg-muted">
-            <p className="text-sm text-muted-foreground">
-              Workspace creation dialog coming soon (Task 14)
+      <>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center max-w-md px-4">
+            <h1 className="text-2xl font-bold mb-2">Welcome to Jility</h1>
+            <p className="text-muted-foreground mb-6">
+              You don't have any workspaces yet. Create your first workspace to get started.
             </p>
+            <Button onClick={() => setShowCreateDialog(true)} size="lg">
+              <Plus className="mr-2 h-5 w-5" />
+              Create Workspace
+            </Button>
           </div>
         </div>
-      </div>
+
+        <CreateWorkspaceDialog
+          open={showCreateDialog}
+          onOpenChange={setShowCreateDialog}
+        />
+      </>
     )
   }
 

@@ -17,6 +17,7 @@ interface WorkspaceContextType {
   isLoading: boolean
   switchWorkspace: (slug: string) => void
   refreshWorkspaces: () => Promise<void>
+  createWorkspace: (data: { name: string }) => Promise<Workspace>
 }
 
 const WorkspaceContext = createContext<WorkspaceContextType | undefined>(undefined)
@@ -74,6 +75,29 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     await fetchWorkspaces()
   }
 
+  const createWorkspace = async (data: { name: string }) => {
+    const response = await fetch('/api/workspaces', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify(data),
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      throw new Error(errorData.message || 'Failed to create workspace')
+    }
+
+    const workspace = await response.json()
+
+    // Refresh workspaces list to include the new one
+    await fetchWorkspaces()
+
+    return workspace
+  }
+
   return (
     <WorkspaceContext.Provider
       value={{
@@ -82,6 +106,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         isLoading,
         switchWorkspace,
         refreshWorkspaces,
+        createWorkspace,
       }}
     >
       {children}
