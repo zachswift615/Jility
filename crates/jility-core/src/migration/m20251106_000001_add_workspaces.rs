@@ -57,16 +57,11 @@ impl MigrationTrait for Migration {
             )
             .await?;
 
-        // Add unique constraint on workspace_id + user_id
+        // Add unique constraint on workspace_id + user_id (using raw SQL for IF NOT EXISTS support)
         manager
-            .create_index(
-                Index::create()
-                    .table(WorkspaceMember::Table)
-                    .name("idx_workspace_member_unique")
-                    .col(WorkspaceMember::WorkspaceId)
-                    .col(WorkspaceMember::UserId)
-                    .unique()
-                    .to_owned(),
+            .get_connection()
+            .execute_unprepared(
+                "CREATE UNIQUE INDEX IF NOT EXISTS idx_workspace_member_unique ON workspace_member (workspace_id, user_id)"
             )
             .await?;
 
@@ -100,45 +95,37 @@ impl MigrationTrait for Migration {
             )
             .await?;
 
-        // Add workspace_id to project table
-        manager
-            .alter_table(
-                Table::alter()
-                    .table(Project::Table)
-                    .add_column(ColumnDef::new(Project::WorkspaceId).uuid().not_null())
-                    .to_owned(),
+        // Add workspace_id to project table (idempotent via error handling)
+        // SQLite doesn't support IF NOT EXISTS for ALTER TABLE ADD COLUMN
+        // We'll try to add it, and if it fails due to duplicate column, that's OK
+        let result = manager
+            .get_connection()
+            .execute_unprepared(
+                "ALTER TABLE project ADD COLUMN workspace_id uuid_text NOT NULL DEFAULT '00000000-0000-0000-0000-000000000000'"
             )
-            .await?;
+            .await;
 
-        // Add foreign key for project.workspace_id
-        manager
-            .create_foreign_key(
-                ForeignKey::create()
-                    .from(Project::Table, Project::WorkspaceId)
-                    .to(Workspace::Table, Workspace::Id)
-                    .on_delete(ForeignKeyAction::Cascade)
-                    .to_owned(),
-            )
-            .await?;
+        // Ignore duplicate column error (code 1), re-raise other errors
+        if let Err(e) = result {
+            let err_msg = e.to_string();
+            if !err_msg.contains("duplicate column name") {
+                return Err(e);
+            }
+            // If it's a duplicate column error, just continue - column already exists
+        }
 
-        // Create indexes for performance
+        // Create indexes for performance (using raw SQL for IF NOT EXISTS support)
         manager
-            .create_index(
-                Index::create()
-                    .table(WorkspaceMember::Table)
-                    .name("idx_workspace_member_user")
-                    .col(WorkspaceMember::UserId)
-                    .to_owned(),
+            .get_connection()
+            .execute_unprepared(
+                "CREATE INDEX IF NOT EXISTS idx_workspace_member_user ON workspace_member (user_id)"
             )
             .await?;
 
         manager
-            .create_index(
-                Index::create()
-                    .table(Project::Table)
-                    .name("idx_project_workspace")
-                    .col(Project::WorkspaceId)
-                    .to_owned(),
+            .get_connection()
+            .execute_unprepared(
+                "CREATE INDEX IF NOT EXISTS idx_project_workspace ON project (workspace_id)"
             )
             .await?;
 

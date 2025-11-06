@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useParams } from 'next/navigation'
 import { api } from '@/lib/api'
 import type { Ticket } from '@/lib/types'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -11,6 +12,8 @@ import { Bot, TrendingUp, CheckCircle2, Clock } from 'lucide-react'
 import Link from 'next/link'
 
 export default function AgentsPage() {
+  const params = useParams()
+  const slug = params.slug as string
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -201,7 +204,7 @@ export default function AgentsPage() {
           ) : (
             <div className="space-y-3">
               {tickets.slice(0, 10).map((ticket) => (
-                <Link key={ticket.id} href={`/ticket/${ticket.id}`}>
+                <Link key={ticket.id} href={`/w/${slug}/ticket/${ticket.id}`}>
                   <Card className="hover:border-primary/50 transition-colors cursor-pointer">
                     <CardContent className="pt-6">
                       <div className="flex items-start justify-between gap-4">

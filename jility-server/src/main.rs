@@ -2,6 +2,7 @@ mod api;
 mod auth;
 mod error;
 mod models;
+mod services;
 mod state;
 mod websocket;
 

@@ -14,6 +14,7 @@ import { ArrowLeft } from 'lucide-react'
 export default function TicketPage() {
   const params = useParams()
   const router = useRouter()
+  const slug = params.slug as string
   const ticketId = params.id as string
 
   const [ticketDetails, setTicketDetails] = useState<TicketDetails | null>(null)
@@ -141,7 +142,7 @@ export default function TicketPage() {
                         variant="outline"
                         size="sm"
                         className="w-full justify-start"
-                        onClick={() => router.push(`/ticket/${dep.id}`)}
+                        onClick={() => router.push(`/w/${slug}/ticket/${dep.id}`)}
                       >
                         <span className="font-mono text-xs mr-2">
                           {dep.number}
@@ -163,7 +164,7 @@ export default function TicketPage() {
                         variant="outline"
                         size="sm"
                         className="w-full justify-start"
-                        onClick={() => router.push(`/ticket/${dep.id}`)}
+                        onClick={() => router.push(`/w/${slug}/ticket/${dep.id}`)}
                       >
                         <span className="font-mono text-xs mr-2">
                           {dep.number}

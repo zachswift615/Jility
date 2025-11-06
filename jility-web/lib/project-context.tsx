@@ -12,6 +12,7 @@ interface ProjectContextType {
   setCurrentProject: (project: Project | null) => void
   refreshProjects: () => Promise<void>
   createProject: (data: {
+    workspace_id: string
     name: string
     description?: string
     key?: string
@@ -83,6 +84,7 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
   }
 
   const createProject = async (data: {
+    workspace_id: string
     name: string
     description?: string
     key?: string

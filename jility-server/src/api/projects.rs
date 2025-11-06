@@ -44,6 +44,7 @@ pub async fn create_project(
 
     let project = project::ActiveModel {
         id: Set(project_id),
+        workspace_id: Set(payload.workspace_id),
         name: Set(payload.name),
         description: Set(payload.description),
         key: Set(payload.key),

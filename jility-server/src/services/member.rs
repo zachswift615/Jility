@@ -3,7 +3,7 @@ use jility_core::entities::{
     workspace_invite, workspace_member, WorkspaceInvite, WorkspaceMember, WorkspaceRole,
 };
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set,
+    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter, Set,
 };
 use uuid::Uuid;
 

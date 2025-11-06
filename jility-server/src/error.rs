@@ -14,6 +14,9 @@ pub enum ApiError {
     #[error("Invalid input: {0}")]
     InvalidInput(String),
 
+    #[error("Bad request: {0}")]
+    BadRequest(String),
+
     #[error("Database error: {0}")]
     Database(#[from] sea_orm::DbErr),
 
@@ -55,7 +58,7 @@ impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
         let (status, error_type) = match &self {
             ApiError::NotFound(_) => (StatusCode::NOT_FOUND, "not_found"),
-            ApiError::InvalidInput(_) | ApiError::Validation(_) => {
+            ApiError::InvalidInput(_) | ApiError::Validation(_) | ApiError::BadRequest(_) => {
                 (StatusCode::BAD_REQUEST, "invalid_input")
             }
             ApiError::Database(_) | ApiError::Internal(_) => {

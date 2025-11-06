@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { useProject } from '@/lib/project-context'
+import { useWorkspace } from '@/lib/workspace-context'
 import { Project } from '@/lib/types'
 import {
   Dialog,
@@ -34,6 +35,7 @@ const PROJECT_COLORS = [
 
 export function ProjectFormDialog({ open, onOpenChange, project }: ProjectFormDialogProps) {
   const { createProject, updateProject } = useProject()
+  const { currentWorkspace } = useWorkspace()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -81,7 +83,13 @@ export function ProjectFormDialog({ open, onOpenChange, project }: ProjectFormDi
     setIsSubmitting(true)
 
     try {
+      if (!currentWorkspace) {
+        setError('No workspace selected')
+        return
+      }
+
       const data = {
+        workspace_id: currentWorkspace.id,
         name: name.trim(),
         description: description.trim() || undefined,
         key: key.trim() || undefined,

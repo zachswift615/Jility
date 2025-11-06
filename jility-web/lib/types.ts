@@ -74,6 +74,7 @@ export interface Project {
 }
 
 export interface CreateProjectRequest {
+  workspace_id: string
   name: string
   description?: string
   key?: string

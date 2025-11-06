@@ -4,6 +4,7 @@ use uuid::Uuid;
 // Project requests
 #[derive(Debug, Deserialize)]
 pub struct CreateProjectRequest {
+    pub workspace_id: Uuid,
     pub name: String,
     pub description: Option<String>,
     pub key: Option<String>,

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, Suspense } from 'react'
-import { useSearchParams, useRouter } from 'next/navigation'
+import { useSearchParams, useRouter, useParams } from 'next/navigation'
 import { api } from '@/lib/api'
 import type { SearchFilters, SearchResult, SavedView } from '@/lib/types'
 import { Input } from '@/components/ui/input'
@@ -11,7 +11,9 @@ import { Card } from '@/components/ui/card'
 
 function SearchPageContent() {
   const router = useRouter()
+  const params = useParams()
   const searchParams = useSearchParams()
+  const slug = params.slug as string
   const initialQuery = searchParams.get('q') || ''
 
   const [filters, setFilters] = useState<SearchFilters>({
@@ -335,7 +337,7 @@ function SearchPageContent() {
                 <Card
                   key={result.ticket_id}
                   className="p-4 cursor-pointer hover:border-primary transition-colors"
-                  onClick={() => router.push(`/ticket/${result.ticket_id}`)}
+                  onClick={() => router.push(`/w/${slug}/ticket/${result.ticket_id}`)}
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">

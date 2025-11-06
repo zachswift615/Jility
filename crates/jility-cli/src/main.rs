@@ -4,7 +4,7 @@ use clap::{Parser, Subcommand};
 mod commands;
 mod output;
 
-use commands::{init, ticket};
+use commands::{/* init, ticket, */ user};
 
 #[derive(Parser)]
 #[command(name = "jility")]
@@ -21,13 +21,19 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    /// Initialize a new Jility project
-    Init,
-    
-    /// Manage tickets
-    Ticket {
+    // /// Initialize a new Jility project
+    // Init,
+
+    // /// Manage tickets
+    // Ticket {
+    //     #[command(subcommand)]
+    //     command: TicketCommands,
+    // },
+
+    /// Manage users
+    User {
         #[command(subcommand)]
-        command: TicketCommands,
+        command: UserCommands,
     },
 }
 
@@ -153,6 +159,22 @@ enum TicketCommands {
     },
 }
 
+#[derive(Subcommand)]
+enum UserCommands {
+    /// Reset a user's password
+    ResetPassword {
+        /// Username or email
+        username_or_email: String,
+
+        /// New password (will prompt if not provided)
+        #[arg(short, long)]
+        password: Option<String>,
+    },
+
+    /// List all users
+    List,
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     let cli = Cli::parse();
@@ -166,50 +188,60 @@ async fn main() -> Result<()> {
     tracing_subscriber::fmt::init();
 
     match cli.command {
-        Some(Commands::Init) => {
-            init::run().await?;
-        }
-        Some(Commands::Ticket { command }) => {
+        // Some(Commands::Init) => {
+        //     init::run().await?;
+        // }
+        // Some(Commands::Ticket { command }) => {
+        //     match command {
+        //         TicketCommands::Create {
+        //             title,
+        //             description,
+        //             story_points,
+        //             assignees,
+        //             labels,
+        //             priority,
+        //         } => {
+        //             ticket::create(title, description, story_points, assignees, labels, priority).await?;
+        //         }
+        //         TicketCommands::List { status, assignee, format } => {
+        //             ticket::list(status, assignee, format).await?;
+        //         }
+        //         TicketCommands::Show { ticket_number, format } => {
+        //             ticket::show(ticket_number, format).await?;
+        //         }
+        //         TicketCommands::Update {
+        //             ticket_number,
+        //             title,
+        //             story_points,
+        //             priority,
+        //             labels,
+        //         } => {
+        //             ticket::update(ticket_number, title, story_points, priority, labels).await?;
+        //         }
+        //         TicketCommands::Edit { ticket_number } => {
+        //             ticket::edit(ticket_number).await?;
+        //         }
+        //         TicketCommands::Move { ticket_number, to } => {
+        //             ticket::move_ticket(ticket_number, to).await?;
+        //         }
+        //         TicketCommands::Assign { ticket_number, to, remove } => {
+        //             ticket::assign(ticket_number, to, remove).await?;
+        //         }
+        //         TicketCommands::Comment { ticket_number, text } => {
+        //             ticket::comment(ticket_number, text).await?;
+        //         }
+        //         TicketCommands::History { ticket_number } => {
+        //             ticket::history(ticket_number).await?;
+        //         }
+        //     }
+        // }
+        Some(Commands::User { command }) => {
             match command {
-                TicketCommands::Create {
-                    title,
-                    description,
-                    story_points,
-                    assignees,
-                    labels,
-                    priority,
-                } => {
-                    ticket::create(title, description, story_points, assignees, labels, priority).await?;
+                UserCommands::ResetPassword { username_or_email, password } => {
+                    user::reset_password(username_or_email, password).await?;
                 }
-                TicketCommands::List { status, assignee, format } => {
-                    ticket::list(status, assignee, format).await?;
-                }
-                TicketCommands::Show { ticket_number, format } => {
-                    ticket::show(ticket_number, format).await?;
-                }
-                TicketCommands::Update {
-                    ticket_number,
-                    title,
-                    story_points,
-                    priority,
-                    labels,
-                } => {
-                    ticket::update(ticket_number, title, story_points, priority, labels).await?;
-                }
-                TicketCommands::Edit { ticket_number } => {
-                    ticket::edit(ticket_number).await?;
-                }
-                TicketCommands::Move { ticket_number, to } => {
-                    ticket::move_ticket(ticket_number, to).await?;
-                }
-                TicketCommands::Assign { ticket_number, to, remove } => {
-                    ticket::assign(ticket_number, to, remove).await?;
-                }
-                TicketCommands::Comment { ticket_number, text } => {
-                    ticket::comment(ticket_number, text).await?;
-                }
-                TicketCommands::History { ticket_number } => {
-                    ticket::history(ticket_number).await?;
+                UserCommands::List => {
+                    user::list_users().await?;
                 }
             }
         }
