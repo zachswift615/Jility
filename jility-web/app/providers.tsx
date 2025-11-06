@@ -4,6 +4,7 @@ import { ThemeProvider as NextThemesProvider } from 'next-themes'
 import { type ThemeProviderProps } from 'next-themes/dist/types'
 import { AuthProvider } from '@/lib/auth-context'
 import { ProjectProvider } from '@/lib/project-context'
+import { WorkspaceProvider } from '@/lib/workspace-context'
 
 export function Providers({ children, ...props }: ThemeProviderProps) {
   return (
@@ -15,9 +16,11 @@ export function Providers({ children, ...props }: ThemeProviderProps) {
       {...props}
     >
       <AuthProvider>
-        <ProjectProvider>
-          {children}
-        </ProjectProvider>
+        <WorkspaceProvider>
+          <ProjectProvider>
+            {children}
+          </ProjectProvider>
+        </WorkspaceProvider>
       </AuthProvider>
     </NextThemesProvider>
   )

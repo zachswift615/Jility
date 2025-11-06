@@ -12,6 +12,9 @@ pub mod ticket_change;
 pub mod ticket_dependency;
 pub mod ticket_label;
 pub mod user;
+pub mod workspace;
+pub mod workspace_invite;
+pub mod workspace_member;
 
 pub use api_key::Entity as ApiKey;
 pub use comment::Entity as Comment;
@@ -27,6 +30,9 @@ pub use ticket_change::Entity as TicketChange;
 pub use ticket_dependency::Entity as TicketDependency;
 pub use ticket_label::Entity as TicketLabel;
 pub use user::Entity as User;
+pub use workspace::Entity as Workspace;
+pub use workspace_invite::Entity as WorkspaceInvite;
+pub use workspace_member::Entity as WorkspaceMember;
 
 // Re-export commonly used types
 pub use api_key::Model as ApiKeyModel;
@@ -37,3 +43,7 @@ pub use sprint::{Model as SprintModel, SprintStatus};
 pub use ticket::{Model as TicketModel, TicketStatus};
 pub use ticket_change::{ChangeType, Model as TicketChangeModel};
 pub use user::Model as UserModel;
+pub use workspace::Model as WorkspaceModel;
+pub use workspace_invite::Model as WorkspaceInviteModel;
+pub use workspace_member::Model as WorkspaceMemberModel;
+pub use workspace_member::WorkspaceRole;

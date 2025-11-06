@@ -169,6 +169,21 @@ pub async fn register(
 
     let user = user.insert(&*state.db).await?;
 
+    // Auto-create workspace for new user
+    use crate::services::WorkspaceService;
+    let workspace_service = WorkspaceService::new(state.db.as_ref().clone());
+    let workspace_name = format!("{}'s Workspace", req.username);
+
+    match workspace_service.create_workspace(workspace_name, user_id).await {
+        Ok(workspace) => {
+            tracing::info!("Created workspace {} for user {}", workspace.slug, user_id);
+        }
+        Err(e) => {
+            tracing::error!("Failed to create workspace for user {}: {}", user_id, e);
+            // Continue anyway - user can create workspace later
+        }
+    }
+
     // Generate JWT
     let token = state
         .auth_service
