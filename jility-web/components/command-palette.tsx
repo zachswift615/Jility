@@ -9,6 +9,7 @@ import type { Ticket } from '@/lib/types'
 import { Badge } from '@/components/ui/badge'
 import { getStatusLabel } from '@/lib/utils'
 import { cn } from '@/lib/utils'
+import { useWorkspace } from '@/lib/workspace-context'
 
 export function CommandPalette() {
   const [open, setOpen] = useState(false)
@@ -16,6 +17,8 @@ export function CommandPalette() {
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [loading, setLoading] = useState(false)
   const router = useRouter()
+  const { currentWorkspace } = useWorkspace()
+  const slug = currentWorkspace?.slug || ''
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -91,7 +94,7 @@ export function CommandPalette() {
 
               <Command.Group heading="Actions">
                 <Command.Item
-                  onSelect={() => handleSelect(() => router.push('/board?create=true'))}
+                  onSelect={() => handleSelect(() => router.push(`/w/${slug}/board?create=true`))}
                   className="flex items-center gap-2 px-2 py-3 rounded-md cursor-pointer hover:bg-accent aria-selected:bg-accent"
                 >
                   <Plus className="h-4 w-4" />
@@ -105,7 +108,7 @@ export function CommandPalette() {
                     <Command.Item
                       key={ticket.id}
                       value={ticket.number}
-                      onSelect={() => handleSelect(() => router.push(`/ticket/${ticket.id}`))}
+                      onSelect={() => handleSelect(() => router.push(`/w/${slug}/ticket/${ticket.id}`))}
                       className="flex items-center justify-between gap-2 px-2 py-3 rounded-md cursor-pointer hover:bg-accent aria-selected:bg-accent"
                     >
                       <div className="flex items-center gap-3 flex-1 min-w-0">

@@ -14,6 +14,7 @@ import {
 import type { Ticket, TicketStatus, WebSocketMessage } from '@/lib/types'
 import { api } from '@/lib/api'
 import { useWebSocket } from '@/lib/websocket'
+import { useWorkspace } from '@/lib/workspace-context'
 import { Column } from './column'
 import { TicketCard } from './ticket-card'
 import { CreateTicketDialog } from '../ticket/create-ticket-dialog'
@@ -23,6 +24,8 @@ const STATUSES: TicketStatus[] = ['backlog', 'todo', 'in_progress', 'review', 'd
 export function KanbanBoard() {
   const searchParams = useSearchParams()
   const router = useRouter()
+  const { currentWorkspace } = useWorkspace()
+  const slug = currentWorkspace?.slug || ''
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [activeTicket, setActiveTicket] = useState<Ticket | null>(null)
   const [loading, setLoading] = useState(true)
@@ -139,7 +142,7 @@ export function KanbanBoard() {
   const handleCloseDialog = () => {
     setShowCreateDialog(false)
     // Remove create param from URL
-    router.push('/board')
+    router.push(`/w/${slug}/board`)
   }
 
   const handleTicketCreated = () => {

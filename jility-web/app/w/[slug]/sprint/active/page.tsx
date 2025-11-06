@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { BurndownChart } from '@/components/sprint/burndown-chart'
 import { calculateDaysRemaining, formatSprintDateRange } from '@/lib/sprint-utils'
 
@@ -42,7 +43,11 @@ interface BurndownData {
   }>
 }
 
-export default function ActiveSprintPage() {
+interface PageProps {
+  params: { slug: string }
+}
+
+export default function ActiveSprintPage({ params }: PageProps) {
   const [sprint, setSprint] = useState<Sprint | null>(null)
   const [stats, setStats] = useState<SprintStats | null>(null)
   const [tickets, setTickets] = useState<Ticket[]>([])
@@ -128,12 +133,12 @@ export default function ActiveSprintPage() {
           <p className="text-gray-600 dark:text-gray-400 mb-6">
             There is no active sprint. Start a sprint from the planning view.
           </p>
-          <a
-            href="/sprint/planning"
+          <Link
+            href={`/w/${params.slug}/sprint/planning`}
             className="inline-block px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
           >
             Go to Sprint Planning
-          </a>
+          </Link>
         </div>
       </div>
     )
