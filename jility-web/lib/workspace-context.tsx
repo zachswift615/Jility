@@ -35,8 +35,16 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   // Fetch user's workspaces
   const fetchWorkspaces = async () => {
     try {
+      const token = localStorage.getItem('jility_token')
+      if (!token) {
+        setIsLoading(false)
+        return
+      }
+
       const response = await fetch('/api/workspaces', {
-        credentials: 'include',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       })
 
       if (!response.ok) {
@@ -76,12 +84,17 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   }
 
   const createWorkspace = async (data: { name: string }) => {
+    const token = localStorage.getItem('jility_token')
+    if (!token) {
+      throw new Error('Not authenticated')
+    }
+
     const response = await fetch('/api/workspaces', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
       },
-      credentials: 'include',
       body: JSON.stringify(data),
     })
 
