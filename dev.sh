@@ -164,6 +164,10 @@ case "$COMMAND" in
             exit 1
         fi
 
+        echo "📦 Installing frontend dependencies..."
+        (cd jility-web && npm install --silent) > /dev/null 2>&1
+        echo -e "${GREEN}✓ Dependencies installed${NC}"
+
         echo "🚀 Starting frontend on port $FRONTEND_PORT with config: $ENV_FILE..."
 
         # Load env vars from specified file and start frontend

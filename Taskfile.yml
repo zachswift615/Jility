@@ -8,6 +8,7 @@ tasks:
   # Start tasks
   start:
     desc: Start services in Docker (production)
+    deps: [install]
     cmds:
       - docker-compose -f {{.COMPOSE_LOCAL}} up -d
       - echo "✅ Services started!"
@@ -98,15 +99,25 @@ tasks:
     cmds:
       - docker-compose -f {{.COMPOSE_LOCAL}} ps
 
+  # Install dependencies
+  install:
+    desc: Install frontend dependencies
+    cmds:
+      - echo "📦 Installing frontend dependencies..."
+      - cd jility-web && npm install
+      - echo "✅ Dependencies installed"
+
   # Build
   build:
     desc: Build Docker images
+    deps: [install]
     cmds:
       - docker-compose -f {{.COMPOSE_LOCAL}} build
       - echo "✅ Build complete"
 
   build-clean:
     desc: Build Docker images without cache
+    deps: [install]
     cmds:
       - docker-compose -f {{.COMPOSE_LOCAL}} build --no-cache
       - echo "✅ Build complete"
