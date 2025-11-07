@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { GripVertical, Edit, MoreHorizontal, BarChart3, User, MessageSquare, Bot, Link2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { AssigneeAvatars } from '@/components/ticket/assignee-avatars'
 
 interface BacklogTicketItemProps {
   ticket: Ticket
@@ -96,14 +97,7 @@ export function BacklogTicketItem({ ticket, isDragging = false }: BacklogTicketI
 
             {/* Assignees */}
             {ticket.assignees.length > 0 ? (
-              <div className="flex items-center gap-1">
-                {ticket.assignees.some((a) => a.toLowerCase().includes('agent')) ? (
-                  <Bot className="h-3.5 w-3.5" />
-                ) : (
-                  <User className="h-3.5 w-3.5" />
-                )}
-                <span>{ticket.assignees[0]}</span>
-              </div>
+              <AssigneeAvatars assignees={ticket.assignees} size="sm" maxVisible={3} />
             ) : (
               <div className="flex items-center gap-1">
                 <User className="h-3.5 w-3.5" />
