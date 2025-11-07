@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { useWorkspace } from '@/lib/workspace-context'
 import { api } from '@/lib/api'
-import type { WorkspaceMember } from '@/lib/types'
+import type { WorkspaceMember, PendingInvite } from '@/lib/types'
 import { WorkspaceMemberList } from '@/components/workspace/member-list'
 import { InviteMemberDialog } from '@/components/workspace/invite-member-dialog'
 import { Button } from '@/components/ui/button'
@@ -15,36 +15,36 @@ export default function WorkspaceSettingsPage() {
   const slug = params.slug as string
   const { currentWorkspace } = useWorkspace()
   const [members, setMembers] = useState<WorkspaceMember[]>([])
+  const [pendingInvites, setPendingInvites] = useState<PendingInvite[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [showInviteDialog, setShowInviteDialog] = useState(false)
 
   useEffect(() => {
     if (slug) {
-      loadMembers()
+      loadData()
     }
   }, [slug])
 
-  const loadMembers = async () => {
+  const loadData = async () => {
     try {
       setIsLoading(true)
-      const data = await api.listWorkspaceMembers(slug)
-      setMembers(data)
+      const [membersData, invitesData] = await Promise.all([
+        api.listWorkspaceMembers(slug),
+        api.listPendingInvites(slug).catch(() => []), // Gracefully handle if user is not admin
+      ])
+      setMembers(membersData)
+      setPendingInvites(invitesData)
     } catch (error) {
-      console.error('Failed to load members:', error)
+      console.error('Failed to load data:', error)
     } finally {
       setIsLoading(false)
     }
   }
 
   const handleInviteMember = async (email: string, role: 'admin' | 'member') => {
-    try {
-      await api.inviteWorkspaceMember(slug, { email, role })
-      await loadMembers()
-      setShowInviteDialog(false)
-    } catch (error) {
-      console.error('Failed to invite member:', error)
-      throw error
-    }
+    const response = await api.inviteWorkspaceMember(slug, { email, role })
+    await loadData() // Reload to show the new pending invite
+    return response
   }
 
   const handleRemoveMember = async (userId: string) => {
@@ -54,7 +54,7 @@ export default function WorkspaceSettingsPage() {
 
     try {
       await api.removeWorkspaceMember(slug, userId)
-      await loadMembers()
+      await loadData()
     } catch (error) {
       console.error('Failed to remove member:', error)
     }
@@ -83,6 +83,7 @@ export default function WorkspaceSettingsPage() {
         <h2 className="text-xl font-semibold mb-4">Team Members</h2>
         <WorkspaceMemberList
           members={members}
+          pendingInvites={pendingInvites}
           isLoading={isLoading}
           isAdmin={isAdmin}
           onRemove={handleRemoveMember}

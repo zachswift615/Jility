@@ -1,13 +1,15 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useAuth } from '@/lib/auth-context'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 
-export default function RegisterPage() {
+function RegisterForm() {
   const { register, isLoading, isAuthenticated } = useAuth()
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const redirect = searchParams.get('redirect')
   const [formData, setFormData] = useState({
     email: '',
     username: '',
@@ -21,7 +23,13 @@ export default function RegisterPage() {
   // Redirect if already logged in
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
-      // Fetch workspaces and redirect to workspace URL
+      // If redirect param exists, use it
+      if (redirect) {
+        router.push(redirect)
+        return
+      }
+
+      // Otherwise, fetch workspaces and redirect to workspace URL
       const redirectToWorkspace = async () => {
         try {
           const token = localStorage.getItem('jility_token')
@@ -45,7 +53,7 @@ export default function RegisterPage() {
       }
       redirectToWorkspace()
     }
-  }, [isAuthenticated, isLoading, router])
+  }, [isAuthenticated, isLoading, router, redirect])
 
   const validatePassword = (password: string): string[] => {
     const errors: string[] = []
@@ -253,11 +261,29 @@ export default function RegisterPage() {
 
         <p className="text-center text-sm text-muted-foreground">
           Already have an account?{' '}
-          <Link href="/login" className="text-primary hover:underline">
+          <Link
+            href={redirect ? `/login?redirect=${encodeURIComponent(redirect)}` : '/login'}
+            className="text-primary hover:underline"
+          >
             Sign in
           </Link>
         </p>
       </div>
     </div>
+  )
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    }>
+      <RegisterForm />
+    </Suspense>
   )
 }

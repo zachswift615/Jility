@@ -135,13 +135,23 @@ pub async fn create_workspace(
     }))
 }
 
+#[derive(Serialize)]
+pub struct InviteResponse {
+    pub invite_id: String,
+    pub email: String,
+    pub role: String,
+    pub token: String,
+    pub invite_url: String,
+    pub expires_at: String,
+}
+
 /// Invite member to workspace
 pub async fn invite_member(
     State(state): State<AppState>,
     Extension(auth_user): Extension<AuthUser>,
     Path(workspace_slug): Path<String>,
     Json(payload): Json<InviteMemberRequest>,
-) -> ApiResult<StatusCode> {
+) -> ApiResult<Json<InviteResponse>> {
     let workspace_service = WorkspaceService::new(state.db.as_ref().clone());
     let member_service = MemberService::new(state.db.as_ref().clone());
 
@@ -173,12 +183,188 @@ pub async fn invite_member(
     };
 
     // Create invite
-    member_service
+    let invite = member_service
         .create_invite(workspace.id, payload.email, invite_role, auth_user.id)
         .await
         .map_err(|e| ApiError::BadRequest(format!("Failed to create invite: {}", e)))?;
 
-    Ok(StatusCode::CREATED)
+    let invite_url = format!("http://localhost:3901/invite/{}", invite.token);
+
+    Ok(Json(InviteResponse {
+        invite_id: invite.id.to_string(),
+        email: invite.email,
+        role: match invite.role {
+            WorkspaceRole::Admin => "admin".to_string(),
+            WorkspaceRole::Member => "member".to_string(),
+        },
+        token: invite.token,
+        invite_url,
+        expires_at: invite.expires_at.to_rfc3339(),
+    }))
+}
+
+#[derive(Serialize)]
+pub struct PendingInviteResponse {
+    pub invite_id: String,
+    pub email: String,
+    pub role: String,
+    pub token: String,
+    pub invite_url: String,
+    pub invited_at: String,
+    pub expires_at: String,
+}
+
+/// List pending invites for workspace
+pub async fn list_pending_invites(
+    State(state): State<AppState>,
+    Extension(auth_user): Extension<AuthUser>,
+    Path(workspace_slug): Path<String>,
+) -> ApiResult<Json<Vec<PendingInviteResponse>>> {
+    let workspace_service = WorkspaceService::new(state.db.as_ref().clone());
+    let member_service = MemberService::new(state.db.as_ref().clone());
+
+    // Get workspace
+    let workspace = workspace_service
+        .get_workspace_by_slug(&workspace_slug)
+        .await
+        .map_err(|e| ApiError::Internal(format!("Failed to fetch workspace: {}", e)))?
+        .ok_or_else(|| ApiError::NotFound("Workspace not found".to_string()))?;
+
+    // Check if user is admin
+    let role = workspace_service
+        .get_user_role(workspace.id, auth_user.id)
+        .await
+        .map_err(|e| ApiError::Internal(format!("Failed to fetch role: {}", e)))?
+        .ok_or_else(|| ApiError::Unauthorized("Not a member".to_string()))?;
+
+    if role != WorkspaceRole::Admin {
+        return Err(ApiError::Unauthorized(
+            "Only admins can view pending invites".to_string(),
+        ));
+    }
+
+    // Get pending invites
+    let invites = member_service
+        .get_pending_invites(workspace.id)
+        .await
+        .map_err(|e| ApiError::Internal(format!("Failed to fetch invites: {}", e)))?;
+
+    let responses = invites
+        .into_iter()
+        .map(|invite| PendingInviteResponse {
+            invite_id: invite.id.to_string(),
+            email: invite.email,
+            role: match invite.role {
+                WorkspaceRole::Admin => "admin".to_string(),
+                WorkspaceRole::Member => "member".to_string(),
+            },
+            token: invite.token.clone(),
+            invite_url: format!("http://localhost:3901/invite/{}", invite.token),
+            invited_at: invite.created_at.to_rfc3339(),
+            expires_at: invite.expires_at.to_rfc3339(),
+        })
+        .collect();
+
+    Ok(Json(responses))
+}
+
+#[derive(Serialize)]
+pub struct InviteDetailsResponse {
+    pub workspace_name: String,
+    pub workspace_slug: String,
+    pub invited_by_email: String,
+    pub role: String,
+    pub expires_at: String,
+    pub is_expired: bool,
+}
+
+/// Get invite details (public endpoint)
+pub async fn get_invite_details(
+    State(state): State<AppState>,
+    Path(token): Path<String>,
+) -> ApiResult<Json<InviteDetailsResponse>> {
+    use jility_core::entities::user;
+
+    let member_service = MemberService::new(state.db.as_ref().clone());
+    let workspace_service = WorkspaceService::new(state.db.as_ref().clone());
+
+    // Get invite
+    let invite = member_service
+        .get_invite_by_token(&token)
+        .await
+        .map_err(|_| ApiError::NotFound("Invite not found".to_string()))?;
+
+    // Check if expired
+    let is_expired = invite.expires_at < chrono::Utc::now().fixed_offset();
+
+    // Get workspace
+    let workspace = workspace_service
+        .get_workspace_by_id(invite.workspace_id)
+        .await
+        .map_err(|e| ApiError::Internal(format!("Failed to fetch workspace: {}", e)))?
+        .ok_or_else(|| ApiError::NotFound("Workspace not found".to_string()))?;
+
+    // Get inviter email
+    use sea_orm::{EntityTrait, ColumnTrait, QueryFilter};
+    let inviter = user::Entity::find()
+        .filter(user::Column::Id.eq(invite.invited_by_user_id))
+        .one(state.db.as_ref())
+        .await
+        .map_err(|e| ApiError::Internal(format!("Failed to fetch inviter: {}", e)))?
+        .ok_or_else(|| ApiError::Internal("Inviter not found".to_string()))?;
+
+    Ok(Json(InviteDetailsResponse {
+        workspace_name: workspace.name,
+        workspace_slug: workspace.slug,
+        invited_by_email: inviter.email,
+        role: match invite.role {
+            WorkspaceRole::Admin => "admin".to_string(),
+            WorkspaceRole::Member => "member".to_string(),
+        },
+        expires_at: invite.expires_at.to_rfc3339(),
+        is_expired,
+    }))
+}
+
+/// Accept workspace invite
+pub async fn accept_invite(
+    State(state): State<AppState>,
+    Extension(auth_user): Extension<AuthUser>,
+    Path(token): Path<String>,
+) -> ApiResult<Json<WorkspaceResponse>> {
+    let member_service = MemberService::new(state.db.as_ref().clone());
+    let workspace_service = WorkspaceService::new(state.db.as_ref().clone());
+
+    // Accept invite (validates token, expiry, etc.)
+    let workspace_id = member_service
+        .accept_invite(&token, auth_user.id)
+        .await
+        .map_err(|e| ApiError::BadRequest(format!("Failed to accept invite: {}", e)))?;
+
+    // Get workspace details
+    let workspace = workspace_service
+        .get_workspace_by_id(workspace_id)
+        .await
+        .map_err(|e| ApiError::Internal(format!("Failed to fetch workspace: {}", e)))?
+        .ok_or_else(|| ApiError::Internal("Workspace not found after accept".to_string()))?;
+
+    // Get user's role in the workspace
+    let role = workspace_service
+        .get_user_role(workspace_id, auth_user.id)
+        .await
+        .map_err(|e| ApiError::Internal(format!("Failed to fetch role: {}", e)))?
+        .unwrap_or(WorkspaceRole::Member);
+
+    Ok(Json(WorkspaceResponse {
+        id: workspace.id.to_string(),
+        name: workspace.name,
+        slug: workspace.slug,
+        role: match role {
+            WorkspaceRole::Admin => "admin".to_string(),
+            WorkspaceRole::Member => "member".to_string(),
+        },
+        created_at: workspace.created_at.to_rfc3339(),
+    }))
 }
 
 #[derive(Serialize)]

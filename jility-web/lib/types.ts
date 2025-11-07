@@ -218,3 +218,39 @@ export interface InviteMemberRequest {
   email: string
   role: 'admin' | 'member'
 }
+
+export interface InviteResponse {
+  invite_id: string
+  email: string
+  role: 'admin' | 'member'
+  token: string
+  invite_url: string
+  expires_at: string
+}
+
+export interface PendingInvite {
+  invite_id: string
+  email: string
+  role: 'admin' | 'member'
+  token: string
+  invite_url: string
+  invited_at: string
+  expires_at: string
+}
+
+export interface InviteDetails {
+  workspace_name: string
+  workspace_slug: string
+  invited_by_email: string
+  role: 'admin' | 'member'
+  expires_at: string
+  is_expired: boolean
+}
+
+export interface WorkspaceResponse {
+  id: string
+  name: string
+  slug: string
+  role: 'admin' | 'member'
+  created_at: string
+}

@@ -76,6 +76,12 @@ impl WorkspaceService {
         Ok(workspace)
     }
 
+    /// Get workspace by ID
+    pub async fn get_workspace_by_id(&self, id: Uuid) -> Result<Option<workspace::Model>> {
+        let workspace = Workspace::find_by_id(id).one(&self.db).await?;
+        Ok(workspace)
+    }
+
     /// Get user's workspaces
     pub async fn get_user_workspaces(&self, user_id: Uuid) -> Result<Vec<workspace::Model>> {
         // Find workspaces where user is a member

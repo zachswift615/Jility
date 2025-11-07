@@ -17,6 +17,10 @@ import type {
   UpdateSavedViewRequest,
   WorkspaceMember,
   InviteMemberRequest,
+  InviteResponse,
+  PendingInvite,
+  InviteDetails,
+  WorkspaceResponse,
 } from './types'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api'
@@ -413,7 +417,7 @@ export const api = {
   inviteWorkspaceMember: async (
     workspaceSlug: string,
     data: InviteMemberRequest
-  ): Promise<void> => {
+  ): Promise<InviteResponse> => {
     const response = await fetch(`${API_BASE}/workspaces/${workspaceSlug}/invite`, {
       method: 'POST',
       headers: {
@@ -426,6 +430,7 @@ export const api = {
       const error = await response.json()
       throw new Error(error.message || 'Failed to invite member')
     }
+    return response.json()
   },
 
   removeWorkspaceMember: async (
@@ -444,5 +449,39 @@ export const api = {
     if (!response.ok) {
       throw new Error('Failed to remove member')
     }
+  },
+
+  listPendingInvites: async (workspaceSlug: string): Promise<PendingInvite[]> => {
+    const response = await fetch(`${API_BASE}/workspaces/${workspaceSlug}/invites`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('jility_token')}`,
+      },
+    })
+    if (!response.ok) {
+      throw new Error('Failed to fetch pending invites')
+    }
+    return response.json()
+  },
+
+  getInviteDetails: async (token: string): Promise<InviteDetails> => {
+    const response = await fetch(`${API_BASE}/invites/${token}`)
+    if (!response.ok) {
+      throw new Error('Failed to fetch invite details')
+    }
+    return response.json()
+  },
+
+  acceptInvite: async (token: string): Promise<WorkspaceResponse> => {
+    const response = await fetch(`${API_BASE}/invites/${token}/accept`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('jility_token')}`,
+      },
+    })
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.message || 'Failed to accept invite')
+    }
+    return response.json()
   },
 }

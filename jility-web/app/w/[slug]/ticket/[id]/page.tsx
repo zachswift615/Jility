@@ -9,7 +9,6 @@ import { TicketDescription } from '@/components/ticket/ticket-description'
 import { CommentsSection } from '@/components/ticket/comments-section'
 import { ActivityTimeline } from '@/components/ticket/activity-timeline'
 import { AssigneeSelector } from '@/components/ticket/assignee-selector'
-import { AssigneeAvatars } from '@/components/ticket/assignee-avatars'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft } from 'lucide-react'
 

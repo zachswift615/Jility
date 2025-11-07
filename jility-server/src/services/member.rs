@@ -175,6 +175,15 @@ impl MemberService {
         Ok(invite)
     }
 
+    /// Get invite by token
+    pub async fn get_invite_by_token(&self, token: &str) -> Result<workspace_invite::Model> {
+        WorkspaceInvite::find()
+            .filter(workspace_invite::Column::Token.eq(token))
+            .one(&self.db)
+            .await?
+            .ok_or_else(|| anyhow!("Invite not found"))
+    }
+
     /// Get pending invites
     pub async fn get_pending_invites(
         &self,

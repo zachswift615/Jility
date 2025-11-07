@@ -29,7 +29,9 @@ pub fn api_routes() -> (Router<AppState>, Router<AppState>) {
         .route("/api/projects/:id", get(projects::get_project))
         .route("/api/tickets", get(tickets::list_tickets))
         .route("/api/tickets/:id", get(tickets::get_ticket))
-        .route("/api/tickets/:id/comments", get(comments::list_comments));
+        .route("/api/tickets/:id/comments", get(comments::list_comments))
+        // Public invite endpoint
+        .route("/api/invites/:token", get(workspaces::get_invite_details));
 
     // Protected routes (authentication required)
     let protected_routes = Router::new()
@@ -40,6 +42,9 @@ pub fn api_routes() -> (Router<AppState>, Router<AppState>) {
         .route("/api/workspaces/:slug/invite", post(workspaces::invite_member))
         .route("/api/workspaces/:slug/members", get(workspaces::list_members))
         .route("/api/workspaces/:slug/members/:user_id", delete(workspaces::remove_member))
+        .route("/api/workspaces/:slug/invites", get(workspaces::list_pending_invites))
+        // Invite acceptance
+        .route("/api/invites/:token/accept", post(workspaces::accept_invite))
         // Auth - protected
         .route("/api/auth/logout", post(auth::logout))
         .route("/api/auth/me", get(auth::get_me))

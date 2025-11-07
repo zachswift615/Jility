@@ -4,7 +4,6 @@ import { useState } from 'react'
 import type { Ticket } from '@/lib/types'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { getStatusLabel, formatDate } from '@/lib/utils'
 import { Calendar, User } from 'lucide-react'
 
@@ -116,24 +115,6 @@ export function TicketHeader({ ticket, onUpdateTitle, onUpdateStoryPoints }: Tic
           <span>{formatDate(ticket.created_at)}</span>
         </div>
       </div>
-
-      {ticket.assignees.length > 0 && (
-        <div>
-          <h3 className="text-xs md:text-sm font-medium mb-2">Assignees</h3>
-          <div className="flex items-center gap-2">
-            {ticket.assignees.map((assignee) => (
-              <div key={assignee} className="flex items-center gap-2">
-                <Avatar className="h-7 w-7 md:h-8 md:w-8">
-                  <AvatarFallback className="text-xs">
-                    {assignee.slice(0, 2).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="text-xs md:text-sm">{assignee}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {ticket.labels.length > 0 && (
         <div>
