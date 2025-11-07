@@ -206,3 +206,15 @@ export interface UpdateSavedViewRequest {
   is_default?: boolean
   is_shared?: boolean
 }
+
+export interface WorkspaceMember {
+  user_id: string
+  email: string
+  role: 'admin' | 'member'
+  joined_at: string
+}
+
+export interface InviteMemberRequest {
+  email: string
+  role: 'admin' | 'member'
+}

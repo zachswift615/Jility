@@ -15,6 +15,8 @@ import type {
   SavedView,
   CreateSavedViewRequest,
   UpdateSavedViewRequest,
+  WorkspaceMember,
+  InviteMemberRequest,
 } from './types'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api'
@@ -393,5 +395,54 @@ export const api = {
       headers: getAuthHeaders(),
     })
     return handleResponse<any[]>(res)
+  },
+
+  // Workspace member management
+  listWorkspaceMembers: async (workspaceSlug: string): Promise<WorkspaceMember[]> => {
+    const response = await fetch(`${API_BASE}/workspaces/${workspaceSlug}/members`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('jility_token')}`,
+      },
+    })
+    if (!response.ok) {
+      throw new Error('Failed to fetch workspace members')
+    }
+    return response.json()
+  },
+
+  inviteWorkspaceMember: async (
+    workspaceSlug: string,
+    data: InviteMemberRequest
+  ): Promise<void> => {
+    const response = await fetch(`${API_BASE}/workspaces/${workspaceSlug}/invite`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('jility_token')}`,
+      },
+      body: JSON.stringify(data),
+    })
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.message || 'Failed to invite member')
+    }
+  },
+
+  removeWorkspaceMember: async (
+    workspaceSlug: string,
+    userId: string
+  ): Promise<void> => {
+    const response = await fetch(
+      `${API_BASE}/workspaces/${workspaceSlug}/members/${userId}`,
+      {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('jility_token')}`,
+        },
+      }
+    )
+    if (!response.ok) {
+      throw new Error('Failed to remove member')
+    }
   },
 }
