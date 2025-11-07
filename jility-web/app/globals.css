@@ -149,11 +149,15 @@
 
 /* Enhanced markdown prose styles */
 .prose code {
-  @apply bg-muted px-1 py-0.5 rounded text-sm;
+  @apply bg-muted px-1 py-0.5 rounded text-sm text-foreground;
 }
 
 .prose pre {
-  @apply bg-muted border border-border;
+  @apply bg-card border border-border p-4 rounded-lg overflow-x-auto;
+}
+
+.prose pre code {
+  @apply bg-transparent p-0 text-foreground font-mono text-sm;
 }
 
 .prose blockquote {
