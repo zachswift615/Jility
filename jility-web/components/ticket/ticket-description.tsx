@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { MarkdownPreview } from '@/components/ui/markdown-preview'
+import { MarkdownHelpPopover } from '@/components/ui/markdown-help-popover'
 import { Edit, Check, X } from 'lucide-react'
 
 interface TicketDescriptionProps {
@@ -50,10 +51,13 @@ export function TicketDescription({ description, onUpdate }: TicketDescriptionPr
       {isEditing ? (
         <div className="space-y-2">
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'write' | 'preview')}>
-            <TabsList className="grid w-full max-w-[400px] grid-cols-2">
-              <TabsTrigger value="write">Write</TabsTrigger>
-              <TabsTrigger value="preview">Preview</TabsTrigger>
-            </TabsList>
+            <div className="flex items-center justify-between">
+              <TabsList className="grid w-full max-w-[400px] grid-cols-2">
+                <TabsTrigger value="write">Write</TabsTrigger>
+                <TabsTrigger value="preview">Preview</TabsTrigger>
+              </TabsList>
+              <MarkdownHelpPopover />
+            </div>
 
             <TabsContent value="write" className="mt-4">
               <Textarea
