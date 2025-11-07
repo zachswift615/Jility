@@ -225,3 +225,52 @@ pub async fn list_members(
 
     Ok(Json(members))
 }
+
+/// Remove workspace member
+pub async fn remove_member(
+    State(state): State<AppState>,
+    Extension(auth_user): Extension<AuthUser>,
+    Path((workspace_slug, user_id)): Path<(String, String)>,
+) -> ApiResult<StatusCode> {
+    let workspace_service = WorkspaceService::new(state.db.as_ref().clone());
+    let member_service = MemberService::new(state.db.as_ref().clone());
+
+    // Parse user_id
+    let target_user_id = Uuid::parse_str(&user_id)
+        .map_err(|_| ApiError::BadRequest("Invalid user ID".to_string()))?;
+
+    // Get workspace
+    let workspace = workspace_service
+        .get_workspace_by_slug(&workspace_slug)
+        .await
+        .map_err(|e| ApiError::Internal(format!("Failed to fetch workspace: {}", e)))?
+        .ok_or_else(|| ApiError::NotFound("Workspace not found".to_string()))?;
+
+    // Check if requesting user is admin
+    let role = workspace_service
+        .get_user_role(workspace.id, auth_user.id)
+        .await
+        .map_err(|e| ApiError::Internal(format!("Failed to fetch role: {}", e)))?
+        .ok_or_else(|| ApiError::Unauthorized("Not a member".to_string()))?;
+
+    if role != WorkspaceRole::Admin {
+        return Err(ApiError::Unauthorized(
+            "Only admins can remove members".to_string(),
+        ));
+    }
+
+    // Don't allow removing yourself
+    if target_user_id == auth_user.id {
+        return Err(ApiError::BadRequest(
+            "Cannot remove yourself from workspace".to_string(),
+        ));
+    }
+
+    // Remove member
+    member_service
+        .remove_member(workspace.id, target_user_id)
+        .await
+        .map_err(|e| ApiError::Internal(format!("Failed to remove member: {}", e)))?;
+
+    Ok(StatusCode::NO_CONTENT)
+}
