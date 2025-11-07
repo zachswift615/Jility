@@ -21,7 +21,11 @@ import { CreateTicketDialog } from '../ticket/create-ticket-dialog'
 
 const STATUSES: TicketStatus[] = ['backlog', 'todo', 'in_progress', 'review', 'done', 'blocked']
 
-export function KanbanBoard() {
+interface KanbanBoardProps {
+  filterFn?: (tickets: Ticket[]) => Ticket[]
+}
+
+export function KanbanBoard({ filterFn }: KanbanBoardProps) {
   const searchParams = useSearchParams()
   const router = useRouter()
   const { currentWorkspace } = useWorkspace()
@@ -157,6 +161,9 @@ export function KanbanBoard() {
     )
   }
 
+  // Apply filter if provided
+  const displayedTickets = filterFn ? filterFn(tickets) : tickets
+
   return (
     <>
       <DndContext
@@ -169,7 +176,7 @@ export function KanbanBoard() {
             <Column
               key={status}
               status={status}
-              tickets={tickets.filter((t) => t.status === status)}
+              tickets={displayedTickets.filter((t) => t.status === status)}
             />
           ))}
         </div>
