@@ -6,7 +6,7 @@ import { CSS } from '@dnd-kit/utilities'
 import { GripVertical, MessageSquare, GitCommit, Users } from 'lucide-react'
 import type { Ticket } from '@/lib/types'
 import { Badge } from '@/components/ui/badge'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { AssigneeAvatars } from '@/components/ticket/assignee-avatars'
 import { cn } from '@/lib/utils'
 
 interface TicketCardProps {
@@ -88,26 +88,7 @@ export function TicketCard({ ticket }: TicketCardProps) {
           )}
         </div>
 
-        <div className="flex items-center gap-2">
-          {ticket.assignees.length > 0 && (
-            <div className="flex -space-x-2">
-              {ticket.assignees.slice(0, 3).map((assignee) => (
-                <Avatar key={assignee} className="h-6 w-6 border-2 border-card">
-                  <AvatarFallback className="text-xs">
-                    {assignee.slice(0, 2).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-              ))}
-              {ticket.assignees.length > 3 && (
-                <Avatar className="h-6 w-6 border-2 border-card">
-                  <AvatarFallback className="text-xs">
-                    +{ticket.assignees.length - 3}
-                  </AvatarFallback>
-                </Avatar>
-              )}
-            </div>
-          )}
-        </div>
+        <AssigneeAvatars assignees={ticket.assignees} size="sm" maxVisible={3} />
       </div>
     </div>
   )
