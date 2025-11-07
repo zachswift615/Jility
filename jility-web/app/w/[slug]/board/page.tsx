@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, useCallback, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { KanbanBoard } from '@/components/kanban/board'
 import { MobileFAB } from '@/components/layout/mobile-fab'
@@ -21,20 +21,19 @@ function BoardContent() {
   const searchParams = useSearchParams()
 
   // Fetch workspace members on mount
-  useEffect(() => {
-    const loadMembers = async () => {
-      try {
-        const data = await api.listWorkspaceMembers(slug)
-        setMembers(data)
-      } catch (error) {
-        console.error('Failed to load workspace members:', error)
-      }
-    }
-
-    if (slug) {
-      loadMembers()
+  const loadMembers = useCallback(async () => {
+    if (!slug) return
+    try {
+      const data = await api.listWorkspaceMembers(slug)
+      setMembers(data)
+    } catch (error) {
+      console.error('Failed to load workspace members:', error)
     }
   }, [slug])
+
+  useEffect(() => {
+    loadMembers()
+  }, [loadMembers])
 
   // Filter tickets by assignee
   const getFilteredTickets = (tickets: Ticket[]) => {
