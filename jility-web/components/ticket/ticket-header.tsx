@@ -11,25 +11,44 @@ import { Calendar, User } from 'lucide-react'
 interface TicketHeaderProps {
   ticket: Ticket
   onUpdateTitle?: (title: string) => void
+  onUpdateStoryPoints?: (points: number | undefined) => void
 }
 
-export function TicketHeader({ ticket, onUpdateTitle }: TicketHeaderProps) {
-  const [isEditing, setIsEditing] = useState(false)
+export function TicketHeader({ ticket, onUpdateTitle, onUpdateStoryPoints }: TicketHeaderProps) {
+  const [isEditingTitle, setIsEditingTitle] = useState(false)
+  const [isEditingPoints, setIsEditingPoints] = useState(false)
   const [title, setTitle] = useState(ticket.title)
+  const [storyPoints, setStoryPoints] = useState(ticket.story_points)
 
-  const handleSave = () => {
+  const handleSaveTitle = () => {
     if (title.trim() && title !== ticket.title && onUpdateTitle) {
       onUpdateTitle(title.trim())
     }
-    setIsEditing(false)
+    setIsEditingTitle(false)
   }
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleSavePoints = () => {
+    if (storyPoints !== ticket.story_points && onUpdateStoryPoints) {
+      onUpdateStoryPoints(storyPoints)
+    }
+    setIsEditingPoints(false)
+  }
+
+  const handleTitleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
-      handleSave()
+      handleSaveTitle()
     } else if (e.key === 'Escape') {
       setTitle(ticket.title)
-      setIsEditing(false)
+      setIsEditingTitle(false)
+    }
+  }
+
+  const handlePointsKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSavePoints()
+    } else if (e.key === 'Escape') {
+      setStoryPoints(ticket.story_points)
+      setIsEditingPoints(false)
     }
   }
 
@@ -44,25 +63,41 @@ export function TicketHeader({ ticket, onUpdateTitle }: TicketHeaderProps) {
             <Badge variant={ticket.status as any} className="text-xs">
               {getStatusLabel(ticket.status)}
             </Badge>
-            {ticket.story_points && (
-              <span className="text-xs md:text-sm text-muted-foreground">
-                {ticket.story_points} story points
+            {isEditingPoints ? (
+              <Input
+                type="number"
+                min="0"
+                step="1"
+                value={storyPoints ?? ''}
+                onChange={(e) => setStoryPoints(e.target.value ? Number(e.target.value) : undefined)}
+                onBlur={handleSavePoints}
+                onKeyDown={handlePointsKeyDown}
+                className="w-20 h-6 px-2 text-xs"
+                autoFocus
+              />
+            ) : (
+              <span
+                onClick={() => onUpdateStoryPoints && setIsEditingPoints(true)}
+                className={`text-xs md:text-sm ${onUpdateStoryPoints ? 'cursor-pointer hover:text-primary' : ''} ${ticket.story_points ? 'text-muted-foreground' : 'text-muted-foreground/50'}`}
+                title={onUpdateStoryPoints ? 'Click to edit story points' : undefined}
+              >
+                {ticket.story_points ? `${ticket.story_points} points` : 'No points'}
               </span>
             )}
           </div>
 
-          {isEditing ? (
+          {isEditingTitle ? (
             <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              onBlur={handleSave}
-              onKeyDown={handleKeyDown}
+              onBlur={handleSaveTitle}
+              onKeyDown={handleTitleKeyDown}
               className="text-xl md:text-2xl font-bold h-auto py-1"
               autoFocus
             />
           ) : (
             <h1
-              onClick={() => setIsEditing(true)}
+              onClick={() => setIsEditingTitle(true)}
               className="text-xl md:text-3xl font-bold leading-tight cursor-pointer hover:text-primary transition-colors"
             >
               {ticket.title}

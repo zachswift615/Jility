@@ -44,6 +44,15 @@ export default function TicketPage() {
     }
   }
 
+  const handleUpdateStoryPoints = async (story_points: number | undefined) => {
+    try {
+      await api.updateTicket(ticketId, { story_points })
+      await loadTicket()
+    } catch (error) {
+      console.error('Failed to update story points:', error)
+    }
+  }
+
   const handleUpdateDescription = async (description: string) => {
     try {
       await api.updateDescription(ticketId, description)
@@ -94,6 +103,7 @@ export default function TicketPage() {
           <TicketHeader
             ticket={ticketDetails.ticket}
             onUpdateTitle={handleUpdateTitle}
+            onUpdateStoryPoints={handleUpdateStoryPoints}
           />
 
           <TicketDescription

@@ -25,6 +25,7 @@ export function CreateTicketDialog({ open, onClose, onCreated }: CreateTicketDia
     title: '',
     description: '',
     status: 'backlog' as TicketStatus,
+    story_points: undefined as number | undefined,
     project_id: currentProject?.id || '',
   })
 
@@ -44,7 +45,7 @@ export function CreateTicketDialog({ open, onClose, onCreated }: CreateTicketDia
       await api.createTicket(formData)
       onCreated?.()
       onClose()
-      setFormData({ title: '', description: '', status: 'backlog', project_id: '' })
+      setFormData({ title: '', description: '', status: 'backlog', story_points: undefined, project_id: '' })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create ticket')
     } finally {
@@ -97,20 +98,35 @@ export function CreateTicketDialog({ open, onClose, onCreated }: CreateTicketDia
             </Tabs>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-1">Status</label>
-            <select
-              value={formData.status}
-              onChange={(e) => setFormData({ ...formData, status: e.target.value as TicketStatus })}
-              className="w-full px-3 py-2 border rounded-md bg-background"
-            >
-              <option value="backlog">Backlog</option>
-              <option value="todo">Todo</option>
-              <option value="in_progress">In Progress</option>
-              <option value="review">Review</option>
-              <option value="done">Done</option>
-              <option value="blocked">Blocked</option>
-            </select>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Story Points</label>
+              <input
+                type="number"
+                min="0"
+                step="1"
+                value={formData.story_points ?? ''}
+                onChange={(e) => setFormData({ ...formData, story_points: e.target.value ? Number(e.target.value) : undefined })}
+                className="w-full px-3 py-2 border rounded-md bg-background"
+                placeholder="Optional"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1">Status</label>
+              <select
+                value={formData.status}
+                onChange={(e) => setFormData({ ...formData, status: e.target.value as TicketStatus })}
+                className="w-full px-3 py-2 border rounded-md bg-background"
+              >
+                <option value="backlog">Backlog</option>
+                <option value="todo">Todo</option>
+                <option value="in_progress">In Progress</option>
+                <option value="review">Review</option>
+                <option value="done">Done</option>
+                <option value="blocked">Blocked</option>
+              </select>
+            </div>
           </div>
 
           {error && (
