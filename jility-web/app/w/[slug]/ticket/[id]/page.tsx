@@ -3,11 +3,13 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
-import type { TicketDetails } from '@/lib/types'
+import type { TicketDetails, WorkspaceMember } from '@/lib/types'
 import { TicketHeader } from '@/components/ticket/ticket-header'
 import { TicketDescription } from '@/components/ticket/ticket-description'
 import { CommentsSection } from '@/components/ticket/comments-section'
 import { ActivityTimeline } from '@/components/ticket/activity-timeline'
+import { AssigneeSelector } from '@/components/ticket/assignee-selector'
+import { AssigneeAvatars } from '@/components/ticket/assignee-avatars'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft } from 'lucide-react'
 
@@ -19,10 +21,30 @@ export default function TicketPage() {
 
   const [ticketDetails, setTicketDetails] = useState<TicketDetails | null>(null)
   const [loading, setLoading] = useState(true)
+  const [members, setMembers] = useState<WorkspaceMember[]>([])
+  const [isLoadingMembers, setIsLoadingMembers] = useState(true)
 
   useEffect(() => {
     loadTicket()
   }, [ticketId])
+
+  useEffect(() => {
+    const loadMembers = async () => {
+      try {
+        setIsLoadingMembers(true)
+        const data = await api.listWorkspaceMembers(slug)
+        setMembers(data)
+      } catch (error) {
+        console.error('Failed to load workspace members:', error)
+      } finally {
+        setIsLoadingMembers(false)
+      }
+    }
+
+    if (slug) {
+      loadMembers()
+    }
+  }, [slug])
 
   const loadTicket = async () => {
     try {
@@ -71,6 +93,61 @@ export default function TicketPage() {
     }
   }
 
+  const handleAssign = async (email: string) => {
+    if (!ticketDetails) return
+
+    // Optimistic update
+    setTicketDetails({
+      ...ticketDetails,
+      ticket: {
+        ...ticketDetails.ticket,
+        assignees: [...ticketDetails.ticket.assignees, email],
+      },
+    })
+
+    try {
+      await api.assignTicket(ticketDetails.ticket.id, email)
+    } catch (error) {
+      // Rollback on error
+      setTicketDetails({
+        ...ticketDetails,
+        ticket: {
+          ...ticketDetails.ticket,
+          assignees: ticketDetails.ticket.assignees.filter((a) => a !== email),
+        },
+      })
+      throw error
+    }
+  }
+
+  const handleUnassign = async (email: string) => {
+    if (!ticketDetails) return
+
+    // Optimistic update
+    const previousAssignees = ticketDetails.ticket.assignees
+    setTicketDetails({
+      ...ticketDetails,
+      ticket: {
+        ...ticketDetails.ticket,
+        assignees: ticketDetails.ticket.assignees.filter((a) => a !== email),
+      },
+    })
+
+    try {
+      await api.unassignTicket(ticketDetails.ticket.id, email)
+    } catch (error) {
+      // Rollback on error
+      setTicketDetails({
+        ...ticketDetails,
+        ticket: {
+          ...ticketDetails.ticket,
+          assignees: previousAssignees,
+        },
+      })
+      throw error
+    }
+  }
+
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -105,6 +182,16 @@ export default function TicketPage() {
             onUpdateTitle={handleUpdateTitle}
             onUpdateStoryPoints={handleUpdateStoryPoints}
           />
+
+          <div className="border-t border-border pt-4">
+            <AssigneeSelector
+              currentAssignees={ticketDetails.ticket.assignees}
+              availableMembers={members}
+              onAssign={handleAssign}
+              onUnassign={handleUnassign}
+              isLoading={isLoadingMembers}
+            />
+          </div>
 
           <TicketDescription
             description={ticketDetails.ticket.description}
