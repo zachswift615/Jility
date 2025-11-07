@@ -16,7 +16,7 @@ import {
   CommandInput,
   CommandItem,
 } from '@/components/ui/command'
-import { useToast } from '@/components/ui/use-toast'
+import { useToast } from '@/hooks/use-toast'
 import type { WorkspaceMember } from '@/lib/types'
 
 interface AssigneeSelectorProps {

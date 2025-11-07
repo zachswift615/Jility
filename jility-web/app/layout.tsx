@@ -3,6 +3,7 @@ import './globals.css'
 import { Providers } from './providers'
 import { Navbar } from '@/components/layout/navbar'
 import { MobileBottomNav } from '@/components/layout/mobile-bottom-nav'
+import { Toaster } from '@/components/ui/toaster'
 
 export const metadata: Metadata = {
   title: 'Jility - AI-Native Project Management',
@@ -25,6 +26,7 @@ export default function RootLayout({
             </main>
             <MobileBottomNav />
           </div>
+          <Toaster />
         </Providers>
       </body>
     </html>
