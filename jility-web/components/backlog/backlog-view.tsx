@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import {
   DndContext,
   DragEndEvent,
@@ -10,8 +11,11 @@ import {
   useSensors,
   DragStartEvent,
 } from '@dnd-kit/core'
-import type { Ticket } from '@/lib/types'
+import type { Ticket, WorkspaceMember } from '@/lib/types'
 import { api } from '@/lib/api'
+import { useAuth } from '@/lib/auth-context'
+import { useWorkspace } from '@/lib/workspace-context'
+import { AssigneeFilter } from '@/components/ticket/assignee-filter'
 import { BacklogToolbar } from './backlog-toolbar'
 import { BacklogSection } from './backlog-section'
 import { BacklogTicketItem } from './backlog-ticket-item'
@@ -27,16 +31,21 @@ interface GroupedTickets {
   ideas: Ticket[]
 }
 
-export function BacklogView() {
+function BacklogContent() {
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [activeTicket, setActiveTicket] = useState<Ticket | null>(null)
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<string>('all')
+  const [members, setMembers] = useState<WorkspaceMember[]>([])
   const [expandedSections, setExpandedSections] = useState<Record<BacklogCategory, boolean>>({
     ready: true,
     needs_estimation: true,
     ideas: false,
   })
+  const { user } = useAuth()
+  const { currentWorkspace } = useWorkspace()
+  const slug = currentWorkspace?.slug || ''
+  const searchParams = useSearchParams()
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -57,12 +66,57 @@ export function BacklogView() {
     }
   }, [])
 
+  const loadMembers = useCallback(async () => {
+    if (!slug) return
+    try {
+      const data = await api.listWorkspaceMembers(slug)
+      setMembers(data)
+    } catch (error) {
+      console.error('Failed to load workspace members:', error)
+    }
+  }, [slug])
+
   useEffect(() => {
     loadTickets()
   }, [loadTickets])
 
+  useEffect(() => {
+    loadMembers()
+  }, [loadMembers])
+
+  // Filter tickets by assignee
+  const getFilteredTickets = (tickets: Ticket[]) => {
+    const assigneeParam = searchParams.get('assignee')
+    if (!assigneeParam) return tickets
+
+    const filters = assigneeParam.split(',')
+
+    return tickets.filter((ticket) => {
+      // Check for "me" filter
+      if (filters.includes('me') && user?.email) {
+        if (ticket.assignees.includes(user.email)) return true
+      }
+
+      // Check for "unassigned" filter
+      if (filters.includes('unassigned')) {
+        if (ticket.assignees.length === 0) return true
+      }
+
+      // Check for specific member emails
+      const memberFilters = filters.filter((f) => f !== 'me' && f !== 'unassigned')
+      if (memberFilters.length > 0) {
+        if (ticket.assignees.some((a) => memberFilters.includes(a))) return true
+      }
+
+      return false
+    })
+  }
+
+  // Apply filter to tickets
+  const filteredTickets = getFilteredTickets(tickets)
+
   // Group tickets by category
-  const groupedTickets: GroupedTickets = tickets.reduce(
+  const groupedTickets: GroupedTickets = filteredTickets.reduce(
     (acc, ticket) => {
       // Categorize based on ticket properties
       if (ticket.story_points === undefined || ticket.story_points === null) {
@@ -78,7 +132,7 @@ export function BacklogView() {
   )
 
   // Calculate statistics
-  const totalPoints = tickets.reduce((sum, t) => sum + (t.story_points || 0), 0)
+  const totalPoints = filteredTickets.reduce((sum, t) => sum + (t.story_points || 0), 0)
   const readyPoints = groupedTickets.ready.reduce((sum, t) => sum + (t.story_points || 0), 0)
 
   const handleDragStart = (event: DragStartEvent) => {
@@ -135,12 +189,17 @@ export function BacklogView() {
   return (
     <div className="flex flex-col h-full p-3 md:p-6">
       <div className="max-w-7xl w-full mx-auto">
-        <BacklogToolbar
-          totalItems={tickets.length}
-          totalPoints={totalPoints}
-          filter={filter}
-          onFilterChange={setFilter}
-        />
+        <div className="flex flex-col gap-3 mb-5">
+          <BacklogToolbar
+            totalItems={filteredTickets.length}
+            totalPoints={totalPoints}
+            filter={filter}
+            onFilterChange={setFilter}
+          />
+          <div className="px-4">
+            <AssigneeFilter members={members} currentUserEmail={user?.email} />
+          </div>
+        </div>
 
         <DndContext
           sensors={sensors}
@@ -235,5 +294,13 @@ export function BacklogView() {
         </div>
       </div>
     </div>
+  )
+}
+
+export function BacklogView() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center h-full"><div className="text-muted-foreground">Loading...</div></div>}>
+      <BacklogContent />
+    </Suspense>
   )
 }
