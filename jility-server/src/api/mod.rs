@@ -38,6 +38,7 @@ pub fn api_routes() -> (Router<AppState>, Router<AppState>) {
         .route("/api/workspaces", post(workspaces::create_workspace))
         .route("/api/workspaces/:slug", get(workspaces::get_workspace))
         .route("/api/workspaces/:slug/invite", post(workspaces::invite_member))
+        .route("/api/workspaces/:slug/members", get(workspaces::list_members))
         // Auth - protected
         .route("/api/auth/logout", post(auth::logout))
         .route("/api/auth/me", get(auth::get_me))

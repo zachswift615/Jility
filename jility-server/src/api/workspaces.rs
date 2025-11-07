@@ -180,3 +180,48 @@ pub async fn invite_member(
 
     Ok(StatusCode::CREATED)
 }
+
+#[derive(Serialize)]
+pub struct WorkspaceMemberResponse {
+    pub user_id: String,
+    pub email: String,
+    pub role: String,
+    pub joined_at: String,
+}
+
+/// List workspace members
+pub async fn list_members(
+    State(state): State<AppState>,
+    Extension(auth_user): Extension<AuthUser>,
+    Path(workspace_slug): Path<String>,
+) -> ApiResult<Json<Vec<WorkspaceMemberResponse>>> {
+    let workspace_service = WorkspaceService::new(state.db.as_ref().clone());
+    let member_service = MemberService::new(state.db.as_ref().clone());
+
+    // Get workspace
+    let workspace = workspace_service
+        .get_workspace_by_slug(&workspace_slug)
+        .await
+        .map_err(|e| ApiError::Internal(format!("Failed to fetch workspace: {}", e)))?
+        .ok_or_else(|| ApiError::NotFound("Workspace not found".to_string()))?;
+
+    // Check if user is a member
+    let is_member = workspace_service
+        .is_member(workspace.id, auth_user.id)
+        .await
+        .map_err(|e| ApiError::Internal(format!("Failed to check membership: {}", e)))?;
+
+    if !is_member {
+        return Err(ApiError::Unauthorized(
+            "You are not a member of this workspace".to_string(),
+        ));
+    }
+
+    // Get all members
+    let members = member_service
+        .list_workspace_members(workspace.id)
+        .await
+        .map_err(|e| ApiError::Internal(format!("Failed to fetch members: {}", e)))?;
+
+    Ok(Json(members))
+}

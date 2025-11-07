@@ -1,11 +1,13 @@
 use anyhow::{anyhow, Result};
 use jility_core::entities::{
-    workspace_invite, workspace_member, WorkspaceInvite, WorkspaceMember, WorkspaceRole,
+    user, workspace_invite, workspace_member, WorkspaceInvite, WorkspaceMember, WorkspaceRole,
 };
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter, Set,
 };
 use uuid::Uuid;
+
+use crate::api::workspaces::WorkspaceMemberResponse;
 
 pub struct MemberService {
     db: DatabaseConnection,
@@ -27,6 +29,35 @@ impl MemberService {
             .await?;
 
         Ok(members)
+    }
+
+    /// List workspace members with user details
+    pub async fn list_workspace_members(
+        &self,
+        workspace_id: Uuid,
+    ) -> Result<Vec<WorkspaceMemberResponse>> {
+        let members = workspace_member::Entity::find()
+            .filter(workspace_member::Column::WorkspaceId.eq(workspace_id))
+            .find_also_related(user::Entity)
+            .all(&self.db)
+            .await?;
+
+        let responses = members
+            .into_iter()
+            .filter_map(|(member, user_opt)| {
+                user_opt.map(|user| WorkspaceMemberResponse {
+                    user_id: member.user_id.to_string(),
+                    email: user.email,
+                    role: match member.role {
+                        WorkspaceRole::Admin => "admin".to_string(),
+                        WorkspaceRole::Member => "member".to_string(),
+                    },
+                    joined_at: member.joined_at.to_rfc3339(),
+                })
+            })
+            .collect();
+
+        Ok(responses)
     }
 
     /// Remove member from workspace
