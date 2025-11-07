@@ -4,6 +4,9 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
 import { useProject } from '@/lib/project-context'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { MarkdownPreview } from '@/components/ui/markdown-preview'
+import { Textarea } from '@/components/ui/textarea'
 import type { TicketStatus } from '@/lib/types'
 
 interface CreateTicketDialogProps {
@@ -17,6 +20,7 @@ export function CreateTicketDialog({ open, onClose, onCreated }: CreateTicketDia
   const { currentProject } = useProject()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState<'write' | 'preview'>('write')
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -69,13 +73,28 @@ export function CreateTicketDialog({ open, onClose, onCreated }: CreateTicketDia
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Description</label>
-            <textarea
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full px-3 py-2 border rounded-md bg-background min-h-[100px]"
-              rows={4}
-            />
+            <label className="block text-sm font-medium mb-2">Description</label>
+            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'write' | 'preview')}>
+              <TabsList className="grid w-full max-w-[400px] grid-cols-2">
+                <TabsTrigger value="write">Write</TabsTrigger>
+                <TabsTrigger value="preview">Preview</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="write" className="mt-4">
+                <Textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  className="min-h-[200px] font-mono text-sm"
+                  placeholder="Describe the ticket (Markdown supported)..."
+                />
+              </TabsContent>
+
+              <TabsContent value="preview" className="mt-4">
+                <div className="min-h-[200px] p-4 bg-muted rounded-lg border border-border">
+                  <MarkdownPreview content={formData.description} />
+                </div>
+              </TabsContent>
+            </Tabs>
           </div>
 
           <div>
