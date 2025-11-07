@@ -148,7 +148,10 @@ export const api = {
   updateDescription: async (id: string, description: string): Promise<Ticket> => {
     const res = await fetch(`${API_BASE}/tickets/${id}/description`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeaders(),
+      },
       body: JSON.stringify({ description, operation: 'replace_all' }),
     })
     return handleResponse<Ticket>(res)
@@ -157,7 +160,10 @@ export const api = {
   assignTicket: async (id: string, assignee: string): Promise<Ticket> => {
     const res = await fetch(`${API_BASE}/tickets/${id}/assign`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeaders(),
+      },
       body: JSON.stringify({ assignee }),
     })
     return handleResponse<Ticket>(res)
@@ -166,7 +172,10 @@ export const api = {
   unassignTicket: async (id: string, assignee: string): Promise<Ticket> => {
     const res = await fetch(`${API_BASE}/tickets/${id}/unassign`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeaders(),
+      },
       body: JSON.stringify({ assignee }),
     })
     return handleResponse<Ticket>(res)
@@ -188,7 +197,10 @@ export const api = {
   createComment: async (ticketId: string, content: string): Promise<Comment> => {
     const res = await fetch(`${API_BASE}/tickets/${ticketId}/comments`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeaders(),
+      },
       body: JSON.stringify({ content }),
     })
     return handleResponse<Comment>(res)
@@ -197,7 +209,10 @@ export const api = {
   updateComment: async (id: string, content: string): Promise<Comment> => {
     const res = await fetch(`${API_BASE}/comments/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeaders(),
+      },
       body: JSON.stringify({ content }),
     })
     return handleResponse<Comment>(res)
@@ -214,7 +229,10 @@ export const api = {
   addDependency: async (ticketId: string, dependsOnId: string): Promise<{ success: boolean }> => {
     const res = await fetch(`${API_BASE}/tickets/${ticketId}/dependencies`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeaders(),
+      },
       body: JSON.stringify({ depends_on_id: dependsOnId }),
     })
     return handleResponse<{ success: boolean }>(res)
@@ -241,7 +259,10 @@ export const api = {
   ): Promise<LinkedCommit> => {
     const res = await fetch(`${API_BASE}/tickets/${ticketId}/commits`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeaders(),
+      },
       body: JSON.stringify({ commit_hash: commitHash, commit_message: commitMessage }),
     })
     return handleResponse<LinkedCommit>(res)
@@ -303,7 +324,10 @@ export const api = {
   createSavedView: async (data: CreateSavedViewRequest): Promise<SavedView> => {
     const res = await fetch(`${API_BASE}/search/views`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeaders(),
+      },
       body: JSON.stringify(data),
     })
     return handleResponse<SavedView>(res)
@@ -312,7 +336,10 @@ export const api = {
   updateSavedView: async (id: string, data: UpdateSavedViewRequest): Promise<SavedView> => {
     const res = await fetch(`${API_BASE}/search/views/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeaders(),
+      },
       body: JSON.stringify(data),
     })
     return handleResponse<SavedView>(res)
