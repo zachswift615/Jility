@@ -37,6 +37,7 @@ export function Navbar() {
     { href: `/w/${slug}/sprint/active`, label: 'Active Sprint', icon: Activity },
     { href: `/w/${slug}/sprint/history`, label: 'History', icon: Clock },
     { href: `/w/${slug}/agents`, label: 'Agents', icon: Boxes },
+    { href: `/w/${slug}/settings`, label: 'Settings', icon: Settings },
   ]
 
   return (
