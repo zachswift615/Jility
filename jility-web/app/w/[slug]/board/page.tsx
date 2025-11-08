@@ -25,20 +25,32 @@ function BoardContent() {
 
   // Fetch active sprint and its tickets
   const loadActiveSprint = useCallback(async () => {
-    if (!slug) return
+    console.log('[DEBUG] loadActiveSprint called, slug:', slug)
+    if (!slug) {
+      console.log('[DEBUG] No slug, returning early')
+      return
+    }
     try {
+      console.log('[DEBUG] Fetching active sprints for slug:', slug)
       const sprints = await api.listSprints(slug, 'active')
+      console.log('[DEBUG] Active sprints response:', sprints)
       if (sprints.length > 0) {
         const sprint = sprints[0]
+        console.log('[DEBUG] Setting active sprint:', sprint)
         setActiveSprint(sprint)
 
         // Fetch sprint details to get ticket IDs
+        console.log('[DEBUG] Fetching sprint details for ID:', sprint.id)
         const sprintDetails = await api.getSprint(sprint.id)
+        console.log('[DEBUG] Sprint details:', sprintDetails)
         const ticketIds = new Set(sprintDetails.tickets.map(t => t.id))
+        console.log('[DEBUG] Ticket IDs in sprint:', Array.from(ticketIds))
         setActiveSprintTicketIds(ticketIds)
+      } else {
+        console.log('[DEBUG] No active sprints found')
       }
     } catch (error) {
-      console.error('Failed to load active sprint:', error)
+      console.error('[DEBUG] Failed to load active sprint:', error)
     }
   }, [slug])
 

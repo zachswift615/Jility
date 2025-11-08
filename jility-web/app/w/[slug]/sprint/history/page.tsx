@@ -1,174 +1,161 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { formatSprintDateRange, getSprintStatusColor } from '@/lib/sprint-utils'
+import { useState, useEffect, useCallback } from 'react'
+import { Calendar, TrendingUp } from 'lucide-react'
+import { withAuth } from '@/lib/with-auth'
+import { useWorkspace } from '@/lib/workspace-context'
+import { api } from '@/lib/api'
+import type { SprintHistory } from '@/lib/types'
 
-interface Sprint {
-  id: string
-  name: string
-  goal?: string
-  status: string
-  start_date?: string
-  end_date?: string
-  created_at: string
-}
-
-interface VelocityData {
-  sprint_name: string
-  completed_points: number
-}
-
-interface SprintHistoryData {
-  sprints: Sprint[]
-  velocity_data: VelocityData[]
-  average_velocity: number
-}
-
-export default function SprintHistoryPage() {
-  const [historyData, setHistoryData] = useState<SprintHistoryData | null>(null)
+function SprintHistoryContent() {
+  const [history, setHistory] = useState<SprintHistory | null>(null)
   const [loading, setLoading] = useState(true)
+  const { currentWorkspace } = useWorkspace()
+  const slug = currentWorkspace?.slug || ''
 
-  const projectId = '550e8400-e29b-41d4-a716-446655440000' // TODO: Get from context/params
-
-  useEffect(() => {
-    fetchSprintHistory()
-  }, [])
-
-  async function fetchSprintHistory() {
+  const fetchHistory = useCallback(async () => {
+    if (!slug) return
     try {
-      const res = await fetch(`http://localhost:3001/api/projects/${projectId}/sprint-history`)
-      if (res.ok) {
-        const data = await res.json()
-        setHistoryData(data)
-      }
+      const data = await api.getSprintHistory(slug)
+      setHistory(data)
     } catch (error) {
-      console.error('Error fetching sprint history:', error)
+      console.error('Failed to fetch sprint history:', error)
     } finally {
       setLoading(false)
     }
-  }
+  }, [slug])
+
+  useEffect(() => {
+    fetchHistory()
+  }, [fetchHistory])
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-gray-600 dark:text-gray-400">Loading...</div>
+        <div className="text-muted-foreground">Loading...</div>
       </div>
     )
   }
 
-  if (!historyData || historyData.sprints.length === 0) {
+  if (!history || history.sprints.length === 0) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">No Sprint History</h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            No sprints have been completed yet.
+      <div className="container mx-auto px-3 md:px-6 py-4 md:py-8">
+        <div className="text-center py-12">
+          <h1 className="text-2xl md:text-3xl font-bold mb-4">No Sprint History</h1>
+          <p className="text-muted-foreground">
+            Complete some sprints to see your team's velocity and performance.
           </p>
         </div>
       </div>
     )
   }
 
-  const maxVelocity = Math.max(...historyData.velocity_data.map(d => d.completed_points))
-
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8">Sprint History</h1>
+    <div className="container mx-auto px-3 md:px-6 py-4 md:py-8">
+      {/* Header */}
+      <div className="mb-6 md:mb-8">
+        <h1 className="text-2xl md:text-3xl font-bold mb-2">Sprint History</h1>
+        <p className="text-muted-foreground">
+          View completed sprints and team velocity over time
+        </p>
+      </div>
 
-      {/* Velocity Trend Chart */}
-      <div className="mb-12">
-        <h2 className="text-2xl font-bold mb-4">Velocity Trend</h2>
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-          <div className="mb-4">
-            <span className="text-lg font-semibold text-gray-700 dark:text-gray-300">
-              Average Velocity: {Math.round(historyData.average_velocity)} points/sprint
-            </span>
+      {/* Velocity Summary */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 md:mb-8">
+        <div className="bg-card border-border border rounded-lg p-4 md:p-6">
+          <div className="flex items-center gap-2 text-muted-foreground mb-2">
+            <TrendingUp className="h-5 w-5" />
+            <span className="font-medium">Average Velocity</span>
           </div>
+          <div className="text-3xl md:text-4xl font-bold">
+            {Math.round(history.average_velocity)}
+          </div>
+          <div className="text-sm text-muted-foreground mt-1">
+            points per sprint
+          </div>
+        </div>
 
-          {/* Simple bar chart */}
-          <div className="space-y-3">
-            {historyData.velocity_data.map((data, index) => (
-              <div key={index}>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    {data.sprint_name}
-                  </span>
-                  <span className="text-sm text-gray-600 dark:text-gray-400">
-                    {data.completed_points} pts
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-6">
-                  <div
-                    className="h-6 rounded-full bg-blue-600 flex items-center justify-end px-2"
-                    style={{ width: `${(data.completed_points / maxVelocity) * 100}%` }}
-                  >
-                    <span className="text-xs text-white font-medium">
-                      {data.completed_points}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ))}
+        <div className="bg-card border-border border rounded-lg p-4 md:p-6">
+          <div className="flex items-center gap-2 text-muted-foreground mb-2">
+            <Calendar className="h-5 w-5" />
+            <span className="font-medium">Completed Sprints</span>
+          </div>
+          <div className="text-3xl md:text-4xl font-bold">
+            {history.sprints.length}
+          </div>
+          <div className="text-sm text-muted-foreground mt-1">
+            total sprints
           </div>
         </div>
       </div>
 
-      {/* Sprint List */}
-      <div>
-        <h2 className="text-2xl font-bold mb-4">Completed Sprints</h2>
-        <div className="space-y-4">
-          {historyData.sprints.map((sprint, index) => {
-            const velocityData = historyData.velocity_data.find(
-              v => v.sprint_name === sprint.name
-            )
-
-            return (
-              <a
-                key={sprint.id}
-                href={`/sprint/${sprint.id}`}
-                className="block bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700 hover:border-blue-500 transition-colors"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-xl font-bold">{sprint.name}</h3>
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${getSprintStatusColor(sprint.status)}`}>
-                        {sprint.status}
-                      </span>
-                    </div>
-
-                    {sprint.goal && (
-                      <p className="text-gray-600 dark:text-gray-400 mb-3">
-                        Goal: {sprint.goal}
-                      </p>
-                    )}
-
-                    <div className="flex items-center gap-6 text-sm text-gray-600 dark:text-gray-400">
-                      {sprint.start_date && sprint.end_date && (
-                        <div>
-                          Completed {formatSprintDateRange(sprint.start_date, sprint.end_date)}
-                        </div>
-                      )}
-                      {velocityData && (
-                        <div>
-                          {velocityData.completed_points} points completed
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {velocityData && (
-                    <div className="ml-6">
-                      <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
-                        {velocityData.completed_points}
-                      </div>
-                      <div className="text-sm text-gray-600 dark:text-gray-400">
-                        points
-                      </div>
-                    </div>
+      {/* Velocity Chart (Simple Bar Chart) */}
+      <div className="bg-card border-border border rounded-lg p-4 md:p-6 mb-6 md:mb-8">
+        <h3 className="font-semibold mb-4">Velocity Trend</h3>
+        <div className="space-y-3">
+          {history.velocity_data.slice().reverse().map((sprint, index) => (
+            <div key={index}>
+              <div className="flex justify-between text-sm mb-1">
+                <span className="font-medium truncate pr-2">{sprint.sprint_name}</span>
+                <span className="font-medium flex-shrink-0">{sprint.completed_points} pts</span>
+              </div>
+              <div className="w-full bg-secondary rounded-full h-6">
+                <div
+                  className="bg-primary h-6 rounded-full transition-all flex items-center px-2"
+                  style={{
+                    width: `${history.average_velocity > 0
+                      ? Math.min((sprint.completed_points / (history.average_velocity * 1.5)) * 100, 100)
+                      : 0}%`,
+                    minWidth: sprint.completed_points > 0 ? '3rem' : '0'
+                  }}
+                >
+                  {sprint.completed_points > 0 && (
+                    <span className="text-xs font-medium text-primary-foreground">
+                      {sprint.completed_points}
+                    </span>
                   )}
                 </div>
-              </a>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Completed Sprints List */}
+      <div className="bg-card border-border border rounded-lg p-4 md:p-6">
+        <h3 className="font-semibold mb-4">Completed Sprints</h3>
+        <div className="space-y-3">
+          {history.sprints.map((sprint) => {
+            const velocity = history.velocity_data.find(v => v.sprint_name === sprint.name)
+            return (
+              <div
+                key={sprint.id}
+                className="p-4 bg-secondary rounded border-border border"
+              >
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-medium">{sprint.name}</h4>
+                    {sprint.goal && (
+                      <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                        {sprint.goal}
+                      </p>
+                    )}
+                    {sprint.start_date && sprint.end_date && (
+                      <p className="text-xs text-muted-foreground mt-2">
+                        {new Date(sprint.start_date).toLocaleDateString()} - {new Date(sprint.end_date).toLocaleDateString()}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-4 flex-shrink-0">
+                    {velocity && (
+                      <div className="text-right">
+                        <div className="text-sm text-muted-foreground">Velocity</div>
+                        <div className="text-lg font-bold">{velocity.completed_points} pts</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
             )
           })}
         </div>
@@ -176,3 +163,5 @@ export default function SprintHistoryPage() {
     </div>
   )
 }
+
+export default withAuth(SprintHistoryContent)
