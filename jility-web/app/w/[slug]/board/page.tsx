@@ -10,15 +10,37 @@ import { withAuth } from '@/lib/with-auth'
 import { useAuth } from '@/lib/auth-context'
 import { api } from '@/lib/api'
 import { useWorkspace } from '@/lib/workspace-context'
-import type { WorkspaceMember, Ticket } from '@/lib/types'
+import type { WorkspaceMember, Ticket, Sprint } from '@/lib/types'
+import { SprintFilter } from '@/components/board/sprint-filter'
 
 function BoardContent() {
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [members, setMembers] = useState<WorkspaceMember[]>([])
+  const [activeSprint, setActiveSprint] = useState<Sprint | null>(null)
+  const [activeSprintTicketIds, setActiveSprintTicketIds] = useState<Set<string>>(new Set())
   const { user } = useAuth()
   const { currentWorkspace } = useWorkspace()
   const slug = currentWorkspace?.slug || ''
   const searchParams = useSearchParams()
+
+  // Fetch active sprint and its tickets
+  const loadActiveSprint = useCallback(async () => {
+    if (!slug) return
+    try {
+      const sprints = await api.listSprints(slug, 'active')
+      if (sprints.length > 0) {
+        const sprint = sprints[0]
+        setActiveSprint(sprint)
+
+        // Fetch sprint details to get ticket IDs
+        const sprintDetails = await api.getSprint(sprint.id)
+        const ticketIds = new Set(sprintDetails.tickets.map(t => t.id))
+        setActiveSprintTicketIds(ticketIds)
+      }
+    } catch (error) {
+      console.error('Failed to load active sprint:', error)
+    }
+  }, [slug])
 
   // Fetch workspace members on mount
   const loadMembers = useCallback(async () => {
@@ -33,7 +55,8 @@ function BoardContent() {
 
   useEffect(() => {
     loadMembers()
-  }, [loadMembers])
+    loadActiveSprint()
+  }, [loadMembers, loadActiveSprint])
 
   // Filter tickets by assignee
   const getFilteredTickets = (tickets: Ticket[]) => {
@@ -63,17 +86,45 @@ function BoardContent() {
     })
   }
 
+  // Filter tickets by sprint
+  const getSprintFilteredTickets = (tickets: Ticket[]) => {
+    const showActiveSprint = searchParams.get('sprint') === 'active'
+
+    if (!showActiveSprint || !activeSprint || activeSprintTicketIds.size === 0) {
+      return tickets
+    }
+
+    return tickets.filter((ticket) => activeSprintTicketIds.has(ticket.id))
+  }
+
+  // Combine both filters
+  const applyAllFilters = (tickets: Ticket[]) => {
+    let filtered = tickets
+
+    // First apply assignee filter
+    const assigneeParam = searchParams.get('assignee')
+    if (assigneeParam) {
+      filtered = getFilteredTickets(filtered)
+    }
+
+    // Then apply sprint filter
+    filtered = getSprintFilteredTickets(filtered)
+
+    return filtered
+  }
+
   return (
     <>
       <div className="flex flex-col h-[calc(100vh-3.5rem-4rem)] md:h-[calc(100vh-4rem)]">
-        {/* Toolbar with filter */}
+        {/* Toolbar with filters */}
         <div className="flex items-center gap-2 px-4 md:px-6 pt-4 pb-2">
+          <SprintFilter hasActiveSprint={!!activeSprint} />
           <AssigneeFilter members={members} currentUserEmail={user?.email} />
         </div>
 
         {/* Board */}
         <div className="flex-1 overflow-hidden">
-          <KanbanBoard filterFn={getFilteredTickets} />
+          <KanbanBoard filterFn={applyAllFilters} />
         </div>
       </div>
 
