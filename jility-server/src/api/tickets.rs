@@ -16,10 +16,25 @@ use crate::{
     state::AppState,
 };
 use jility_core::entities::{
-    ticket, ticket_assignee, ticket_label, ticket_change, comment, commit_link, ticket_dependency,
+    ticket, ticket_assignee, ticket_label, ticket_change, comment, commit_link, ticket_dependency, project,
     Ticket, TicketAssignee, TicketLabel, TicketChange, Comment, CommitLink,
-    TicketDependency, TicketStatus, ChangeType,
+    TicketDependency, TicketStatus, ChangeType, Project,
 };
+
+/// Helper function to format ticket number with project key
+async fn format_ticket_number(
+    db: &sea_orm::DatabaseConnection,
+    ticket: &ticket::Model,
+) -> ApiResult<String> {
+    let project = Project::find_by_id(ticket.project_id)
+        .one(db)
+        .await
+        .map_err(ApiError::from)?
+        .ok_or_else(|| ApiError::NotFound(format!("Project not found: {}", ticket.project_id)))?;
+
+    let prefix = project.key.as_ref().map(|k| k.as_str()).unwrap_or("TASK");
+    Ok(format!("{}-{}", prefix, ticket.ticket_number))
+}
 
 #[derive(Debug, Deserialize)]
 pub struct ListTicketsQuery {
@@ -72,9 +87,11 @@ pub async fn list_tickets(
             .map(|l| l.label)
             .collect();
 
+        let number = format_ticket_number(state.db.as_ref(), &ticket).await?;
+
         responses.push(TicketResponse {
             id: ticket.id.to_string(),
-            number: format!("TASK-{}", ticket.ticket_number),
+            number,
             title: ticket.title,
             description: ticket.description,
             status: ticket.status,
@@ -212,9 +229,11 @@ pub async fn create_ticket(
 
     txn.commit().await.map_err(ApiError::from)?;
 
+    let number = format_ticket_number(state.db.as_ref(), &result).await?;
+
     let response = TicketResponse {
         id: result.id.to_string(),
-        number: format!("TASK-{}", result.ticket_number),
+        number,
         title: result.title,
         description: result.description,
         status: result.status,
@@ -303,9 +322,10 @@ pub async fn get_ticket(
             .await
             .map_err(ApiError::from)?
         {
+            let number = format_ticket_number(state.db.as_ref(), &dep_ticket).await?;
             dependency_refs.push(TicketReference {
                 id: dep_ticket.id.to_string(),
-                number: format!("TASK-{}", dep_ticket.ticket_number),
+                number,
                 title: dep_ticket.title,
                 status: dep_ticket.status,
             });
@@ -326,9 +346,10 @@ pub async fn get_ticket(
             .await
             .map_err(ApiError::from)?
         {
+            let number = format_ticket_number(state.db.as_ref(), &dep_ticket).await?;
             dependent_refs.push(TicketReference {
                 id: dep_ticket.id.to_string(),
-                number: format!("TASK-{}", dep_ticket.ticket_number),
+                number,
                 title: dep_ticket.title,
                 status: dep_ticket.status,
             });
@@ -371,9 +392,11 @@ pub async fn get_ticket(
         })
         .collect();
 
+    let number = format_ticket_number(state.db.as_ref(), &ticket).await?;
+
     let ticket_response = TicketResponse {
         id: ticket.id.to_string(),
-        number: format!("TASK-{}", ticket.ticket_number),
+        number,
         title: ticket.title,
         description: ticket.description,
         status: ticket.status,
@@ -453,9 +476,11 @@ pub async fn update_ticket(
         .map(|l| l.label)
         .collect();
 
+    let number = format_ticket_number(state.db.as_ref(), &result).await?;
+
     let response = TicketResponse {
         id: result.id.to_string(),
-        number: format!("TASK-{}", result.ticket_number),
+        number,
         title: result.title,
         description: result.description,
         status: result.status,
@@ -541,9 +566,11 @@ pub async fn update_description(
         .map(|l| l.label)
         .collect();
 
+    let number = format_ticket_number(state.db.as_ref(), &result).await?;
+
     Ok(Json(TicketResponse {
         id: result.id.to_string(),
-        number: format!("TASK-{}", result.ticket_number),
+        number,
         title: result.title,
         description: result.description,
         status: result.status,
@@ -624,9 +651,11 @@ pub async fn update_status(
         .map(|l| l.label)
         .collect();
 
+    let number = format_ticket_number(state.db.as_ref(), &result).await?;
+
     let response = TicketResponse {
         id: result.id.to_string(),
-        number: format!("TASK-{}", result.ticket_number),
+        number,
         title: result.title,
         description: result.description,
         status: result.status.clone(),
@@ -717,9 +746,11 @@ pub async fn assign_ticket(
         .map(|l| l.label)
         .collect();
 
+    let number = format_ticket_number(state.db.as_ref(), &ticket).await?;
+
     Ok(Json(TicketResponse {
         id: ticket.id.to_string(),
-        number: format!("TASK-{}", ticket.ticket_number),
+        number,
         title: ticket.title,
         description: ticket.description,
         status: ticket.status,
@@ -800,9 +831,11 @@ pub async fn unassign_ticket(
         .map(|l| l.label)
         .collect();
 
+    let number = format_ticket_number(state.db.as_ref(), &ticket).await?;
+
     Ok(Json(TicketResponse {
         id: ticket.id.to_string(),
-        number: format!("TASK-{}", ticket.ticket_number),
+        number,
         title: ticket.title,
         description: ticket.description,
         status: ticket.status,
