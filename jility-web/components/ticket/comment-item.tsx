@@ -12,6 +12,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
 interface CommentItemProps {
   comment: {
@@ -30,6 +40,7 @@ export function CommentItem({ comment, currentUser, onEdit, onDelete }: CommentI
   const [isEditing, setIsEditing] = useState(false)
   const [editedContent, setEditedContent] = useState(comment.content)
   const [isSaving, setIsSaving] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
 
   const isAuthor = comment.author === currentUser
   const isEdited = comment.updated_at && comment.updated_at !== comment.created_at
@@ -50,10 +61,10 @@ export function CommentItem({ comment, currentUser, onEdit, onDelete }: CommentI
 
   const handleDelete = async () => {
     if (!onDelete) return
-    if (!confirm('Delete this comment?')) return
 
     try {
       await onDelete(comment.id)
+      setShowDeleteDialog(false)
     } catch (error) {
       console.error('Failed to delete comment:', error)
     }
@@ -82,6 +93,7 @@ export function CommentItem({ comment, currentUser, onEdit, onDelete }: CommentI
               value={editedContent}
               onChange={(e) => setEditedContent(e.target.value)}
               className="min-h-20"
+              autoFocus
             />
             <div className="flex gap-2">
               <Button size="sm" onClick={handleSave} disabled={isSaving}>
@@ -114,6 +126,7 @@ export function CommentItem({ comment, currentUser, onEdit, onDelete }: CommentI
               variant="ghost"
               size="sm"
               className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100"
+              aria-label="Comment actions"
             >
               <MoreHorizontal className="h-4 w-4" />
             </Button>
@@ -123,13 +136,28 @@ export function CommentItem({ comment, currentUser, onEdit, onDelete }: CommentI
               <Pencil className="h-4 w-4 mr-2" />
               Edit
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={handleDelete} className="text-destructive">
+            <DropdownMenuItem onClick={() => setShowDeleteDialog(true)} className="text-destructive">
               <Trash2 className="h-4 w-4 mr-2" />
               Delete
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       )}
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete comment?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
