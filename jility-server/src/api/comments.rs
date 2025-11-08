@@ -1,9 +1,10 @@
-use axum::{extract::{Path, State}, Json};
+use axum::{extract::{Path, State}, Extension, Json};
 use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
 use uuid::Uuid;
 use chrono::Utc;
 
 use crate::{
+    auth::middleware::AuthUser,
     error::{ApiError, ApiResult},
     models::{CreateCommentRequest, UpdateCommentRequest, CommentResponse},
     state::AppState,
@@ -38,6 +39,7 @@ pub async fn list_comments(
 
 pub async fn create_comment(
     State(state): State<AppState>,
+    Extension(auth_user): Extension<AuthUser>,
     Path(ticket_id): Path<String>,
     Json(payload): Json<CreateCommentRequest>,
 ) -> ApiResult<Json<CommentResponse>> {
@@ -48,7 +50,7 @@ pub async fn create_comment(
     let comment = comment::ActiveModel {
         id: Set(Uuid::new_v4()),
         ticket_id: Set(ticket_uuid),
-        author: Set("system".to_string()), // TODO: Get from auth context
+        author: Set(auth_user.username),
         content: Set(payload.content),
         created_at: Set(now),
         updated_at: Set(None),
