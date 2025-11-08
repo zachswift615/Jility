@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Pencil, Check, X } from 'lucide-react'
 
 interface CapacityEditorProps {
@@ -13,6 +13,13 @@ export function CapacityEditor({ capacity, onSave }: CapacityEditorProps) {
   const [value, setValue] = useState(capacity.toString())
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+
+  // Sync value when capacity prop changes while not editing
+  useEffect(() => {
+    if (!editing) {
+      setValue(capacity.toString())
+    }
+  }, [capacity, editing])
 
   const handleSave = async () => {
     const parsed = parseInt(value, 10)
@@ -66,24 +73,26 @@ export function CapacityEditor({ capacity, onSave }: CapacityEditorProps) {
             min="1"
             autoFocus
             onKeyDown={(e) => {
-              if (e.key === 'Enter') handleSave()
-              if (e.key === 'Escape') handleCancel()
+              if (e.key === 'Enter' && !saving) handleSave()
+              if (e.key === 'Escape' && !saving) handleCancel()
             }}
           />
           <span className="text-sm text-muted-foreground">pts</span>
           <button
             onClick={handleSave}
             disabled={saving}
-            className="p-1 text-green-600 hover:bg-green-100 dark:hover:bg-green-900 rounded disabled:opacity-50"
+            className="p-1 text-green-600 dark:text-green-400 hover:bg-green-600/10 rounded disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             title="Save"
+            aria-label="Save capacity"
           >
             <Check className="h-4 w-4" />
           </button>
           <button
             onClick={handleCancel}
             disabled={saving}
-            className="p-1 text-destructive hover:bg-destructive/10 rounded disabled:opacity-50"
+            className="p-1 text-destructive hover:bg-destructive/10 rounded disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             title="Cancel"
+            aria-label="Cancel editing"
           >
             <X className="h-4 w-4" />
           </button>
