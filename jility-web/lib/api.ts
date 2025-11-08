@@ -21,9 +21,14 @@ import type {
   PendingInvite,
   InviteDetails,
   WorkspaceResponse,
+  Sprint,
+  SprintDetails,
+  SprintStats,
+  BurndownData,
+  SprintHistory,
 } from './types'
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api'
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3900/api'
 
 function getAuthHeaders(): Record<string, string> {
   if (typeof window === 'undefined') return {}
@@ -484,5 +489,151 @@ export const api = {
       throw new Error(error.message || 'Failed to accept invite')
     }
     return response.json()
+  },
+
+  // Helper to get project ID from workspace
+  // TODO: Make this more efficient - could cache or get from workspace context
+  getProjectByWorkspace: async (workspaceSlug: string): Promise<Project> => {
+    const projects = await api.listProjects()
+    // For now, assume one project per workspace and get the first one
+    // In the future, we should filter by workspace or store workspace-project mapping
+    if (projects.length === 0) {
+      throw new Error('No project found for workspace')
+    }
+    return projects[0]
+  },
+
+  // Sprint Management
+  listSprints: async (workspaceSlug: string, status?: string): Promise<Sprint[]> => {
+    const project = await api.getProjectByWorkspace(workspaceSlug)
+    const url = status
+      ? `${API_BASE}/projects/${project.id}/sprints?status=${status}`
+      : `${API_BASE}/projects/${project.id}/sprints`
+    const res = await fetch(url, { headers: getAuthHeaders() })
+    return handleResponse<Sprint[]>(res)
+  },
+
+  createSprint: async (
+    workspaceSlug: string,
+    data: {
+      name: string
+      goal?: string
+      start_date?: string
+      end_date?: string
+    }
+  ): Promise<Sprint> => {
+    const project = await api.getProjectByWorkspace(workspaceSlug)
+    const res = await fetch(`${API_BASE}/projects/${project.id}/sprints`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeaders(),
+      },
+      body: JSON.stringify(data),
+    })
+    return handleResponse<Sprint>(res)
+  },
+
+  getSprint: async (sprintId: string): Promise<SprintDetails> => {
+    const res = await fetch(`${API_BASE}/sprints/${sprintId}`, {
+      headers: getAuthHeaders(),
+    })
+    return handleResponse<SprintDetails>(res)
+  },
+
+  updateSprint: async (
+    sprintId: string,
+    data: {
+      name?: string
+      goal?: string
+      start_date?: string
+      end_date?: string
+    }
+  ): Promise<Sprint> => {
+    const res = await fetch(`${API_BASE}/sprints/${sprintId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeaders(),
+      },
+      body: JSON.stringify(data),
+    })
+    return handleResponse<Sprint>(res)
+  },
+
+  deleteSprint: async (sprintId: string): Promise<void> => {
+    const res = await fetch(`${API_BASE}/sprints/${sprintId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    })
+    await handleResponse<void>(res)
+  },
+
+  startSprint: async (
+    sprintId: string,
+    data: {
+      start_date: string
+      end_date: string
+    }
+  ): Promise<Sprint> => {
+    const res = await fetch(`${API_BASE}/sprints/${sprintId}/start`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeaders(),
+      },
+      body: JSON.stringify(data),
+    })
+    return handleResponse<Sprint>(res)
+  },
+
+  completeSprint: async (sprintId: string): Promise<Sprint> => {
+    const res = await fetch(`${API_BASE}/sprints/${sprintId}/complete`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+    })
+    return handleResponse<Sprint>(res)
+  },
+
+  addTicketToSprint: async (sprintId: string, ticketId: string, addedBy: string): Promise<void> => {
+    const res = await fetch(`${API_BASE}/sprints/${sprintId}/tickets/${ticketId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeaders(),
+      },
+      body: JSON.stringify({ added_by: addedBy }),
+    })
+    await handleResponse<void>(res)
+  },
+
+  removeTicketFromSprint: async (sprintId: string, ticketId: string): Promise<void> => {
+    const res = await fetch(`${API_BASE}/sprints/${sprintId}/tickets/${ticketId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    })
+    await handleResponse<void>(res)
+  },
+
+  getSprintStats: async (sprintId: string): Promise<SprintStats> => {
+    const res = await fetch(`${API_BASE}/sprints/${sprintId}/stats`, {
+      headers: getAuthHeaders(),
+    })
+    return handleResponse<SprintStats>(res)
+  },
+
+  getBurndownData: async (sprintId: string): Promise<BurndownData> => {
+    const res = await fetch(`${API_BASE}/sprints/${sprintId}/burndown`, {
+      headers: getAuthHeaders(),
+    })
+    return handleResponse<BurndownData>(res)
+  },
+
+  getSprintHistory: async (workspaceSlug: string): Promise<SprintHistory> => {
+    const project = await api.getProjectByWorkspace(workspaceSlug)
+    const res = await fetch(`${API_BASE}/projects/${project.id}/sprint-history`, {
+      headers: getAuthHeaders(),
+    })
+    return handleResponse<SprintHistory>(res)
   },
 }
