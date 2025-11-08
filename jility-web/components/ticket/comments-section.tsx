@@ -4,94 +4,92 @@ import { useState } from 'react'
 import type { Comment } from '@/lib/types'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { formatDateTime } from '@/lib/utils'
-import { MessageSquare } from 'lucide-react'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
+import { CommentItem } from './comment-item'
+import { MessageSquare, Send } from 'lucide-react'
 
 interface CommentsSectionProps {
   comments: Comment[]
-  onAddComment?: (content: string) => void
+  currentUser?: string
+  onAddComment: (content: string) => Promise<void>
+  onEditComment?: (id: string, content: string) => Promise<void>
+  onDeleteComment?: (id: string) => Promise<void>
 }
 
-export function CommentsSection({ comments, onAddComment }: CommentsSectionProps) {
+export function CommentsSection({
+  comments,
+  currentUser = 'system',
+  onAddComment,
+  onEditComment,
+  onDeleteComment,
+}: CommentsSectionProps) {
   const [newComment, setNewComment] = useState('')
-  const [isAdding, setIsAdding] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const handleSubmit = () => {
-    if (newComment.trim() && onAddComment) {
-      onAddComment(newComment.trim())
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newComment.trim()) return
+
+    setIsSubmitting(true)
+    try {
+      await onAddComment(newComment.trim())
       setNewComment('')
-      setIsAdding(false)
+    } catch (error) {
+      console.error('Failed to add comment:', error)
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
   return (
-    <div className="mt-6 md:mt-8 space-y-3 md:space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-base md:text-lg font-semibold flex items-center gap-2">
-          <MessageSquare className="h-4 w-4 md:h-5 md:w-5" />
+    <div className="mt-6 md:mt-8 space-y-4 md:space-y-6">
+      <div className="flex items-center gap-2">
+        <MessageSquare className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
+        <h2 className="text-base md:text-lg font-semibold">
           Comments ({comments.length})
         </h2>
       </div>
 
+      {/* Comment List */}
       <div className="space-y-3 md:space-y-4">
-        {comments.map((comment) => (
-          <div key={comment.id} className="flex gap-2 md:gap-3">
-            <Avatar className="h-8 w-8 md:h-10 md:w-10 flex-shrink-0">
-              <AvatarFallback className="text-xs">
-                {comment.author.slice(0, 2).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1 min-w-0 space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="text-xs md:text-sm font-medium">{comment.author}</span>
-                <span className="text-xs text-muted-foreground">
-                  {formatDateTime(comment.created_at)}
-                </span>
-              </div>
-              <div className="text-xs md:text-sm prose prose-sm max-w-none dark:prose-invert">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                  {comment.content}
-                </ReactMarkdown>
-              </div>
-            </div>
-          </div>
-        ))}
+        {comments.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            No comments yet. Start the conversation!
+          </p>
+        ) : (
+          comments.map((comment) => (
+            <CommentItem
+              key={comment.id}
+              comment={comment}
+              currentUser={currentUser}
+              onEdit={onEditComment}
+              onDelete={onDeleteComment}
+            />
+          ))
+        )}
       </div>
 
-      {isAdding ? (
-        <div className="space-y-2">
-          <Textarea
-            value={newComment}
-            onChange={(e) => setNewComment(e.target.value)}
-            placeholder="Write a comment (Markdown supported)..."
-            className="min-h-[100px] text-sm"
-            autoFocus
-          />
-          <div className="flex gap-2">
-            <Button size="sm" onClick={handleSubmit} className="text-xs md:text-sm">
-              Comment
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                setNewComment('')
-                setIsAdding(false)
-              }}
-              className="text-xs md:text-sm"
-            >
-              Cancel
-            </Button>
-          </div>
+      {/* New Comment Form */}
+      <form onSubmit={handleSubmit} className="space-y-2 md:space-y-3">
+        <Textarea
+          placeholder="Add a comment..."
+          value={newComment}
+          onChange={(e) => setNewComment(e.target.value)}
+          className="min-h-20 md:min-h-24 text-sm"
+          disabled={isSubmitting}
+        />
+        <div className="flex justify-end">
+          <Button type="submit" disabled={isSubmitting || !newComment.trim()} size="sm" className="text-xs md:text-sm">
+            {isSubmitting ? (
+              'Posting...'
+            ) : (
+              <>
+                <Send className="h-4 w-4 mr-2" />
+                Comment
+              </>
+            )}
+          </Button>
         </div>
-      ) : (
-        <Button variant="outline" onClick={() => setIsAdding(true)} className="text-xs md:text-sm">
-          Add Comment
-        </Button>
-      )}
+      </form>
     </div>
   )
 }
