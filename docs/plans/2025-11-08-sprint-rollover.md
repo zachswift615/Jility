@@ -1,6 +1,6 @@
 # Sprint Rollover Implementation Plan
 
-> **Status:** ✅ COMPLETE (Implemented 2025-01-08)
+> **Status:** ✅ COMPLETE (JIL-22, Implemented 2025-01-08)
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 

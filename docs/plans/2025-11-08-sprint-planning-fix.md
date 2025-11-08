@@ -1,5 +1,7 @@
 # Sprint Planning Fix Implementation Plan
 
+> **Status:** ✅ COMPLETE (JIL-7)
+
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** Fix the existing Sprint Planning, Active Sprint, and History pages to work with the current workspace/auth system and add a Create Sprint dialog.

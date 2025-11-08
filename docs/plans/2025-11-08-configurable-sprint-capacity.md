@@ -1,6 +1,7 @@
 # Configurable Sprint Capacity Implementation Plan
 
-> **Status:** ✅ COMPLETE (Implemented 2025-01-08)
+> **Status:** ✅ COMPLETE (JIL-23, Implemented 2025-01-08)
+> **Note:** Currently uses localStorage. See JIL-26 for backend persistence.
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 

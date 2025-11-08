@@ -5,11 +5,11 @@
 **Goal:** Implement the complete Jility feature roadmap from Phase 1 through Phase 5, transforming Jility from a basic ticket tracker into a full-featured, AI-native project management tool.
 
 **Status:**
-- ✅ Phase 1: Core Collaboration - 1.1 Comments System (COMPLETE)
-- ✅ Phase 2: Sprint Planning - Sprint Rollover + Configurable Capacity (COMPLETE)
-- 📋 Phase 3: Visual Workflows - PLANNED
-- 📋 Phase 4: Search & Discovery - PLANNED
-- 📋 Phase 5: AI/Agent Features - PLANNED
+- ✅ Phase 1: Core Collaboration (JIL-5) - 1.1 Comments System (JIL-6) (COMPLETE)
+- ✅ Phase 2: Sprint Planning (JIL-7, JIL-22, JIL-23, JIL-24) - Sprint Planning Fix, Sprint Rollover, Configurable Capacity, Active Sprint Filter (COMPLETE)
+- 📋 Phase 3: Visual Workflows (JIL-8) - PLANNED
+- 📋 Phase 4: Search & Discovery (JIL-11) - PLANNED
+- 📋 Phase 5: AI/Agent Features (JIL-14) - PLANNED
 
 ---
 

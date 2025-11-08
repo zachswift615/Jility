@@ -14,6 +14,7 @@ pub struct JilityService {
     client: Client,
     api_base_url: String,
     auth_token: Option<String>,
+    project_id: String,
 }
 
 impl JilityService {
@@ -23,7 +24,11 @@ impl JilityService {
 
         let auth_token = std::env::var("JILITY_API_TOKEN").ok();
 
+        let project_id = std::env::var("JILITY_PROJECT_ID")
+            .map_err(|_| anyhow::anyhow!("JILITY_PROJECT_ID environment variable is required"))?;
+
         tracing::info!("Jility API URL: {}", api_base_url);
+        tracing::info!("Jility Project ID: {}", project_id);
         if auth_token.is_some() {
             tracing::info!("Using authentication token");
         } else {
@@ -34,6 +39,7 @@ impl JilityService {
             client: Client::new(),
             api_base_url,
             auth_token,
+            project_id,
         })
     }
 
@@ -43,10 +49,10 @@ impl JilityService {
         if let Some(token) = &self.auth_token {
             // Support both JWT tokens and API keys
             if token.starts_with("jil_") {
-                // API key format - send directly in Authorization header
-                request = request.header("Authorization", token);
+                // API key format - use "ApiKey" prefix
+                request = request.header("Authorization", format!("ApiKey {}", token));
             } else {
-                // JWT token format
+                // JWT token format - use "Bearer" prefix
                 request = request.header("Authorization", format!("Bearer {}", token));
             }
         }
@@ -74,6 +80,7 @@ impl JilityService {
             format!("{}/tickets", self.api_base_url)
         )
             .json(&json!({
+                "project_id": self.project_id,
                 "title": title,
                 "description": description.unwrap_or_default(),
                 "story_points": story_points,
@@ -131,9 +138,12 @@ impl JilityService {
         let mut created_tickets = Vec::new();
 
         for ticket_params in params.tickets {
-            let response = self.client
-                .post(format!("{}/tickets", self.api_base_url))
+            let response = self.build_request(
+                reqwest::Method::POST,
+                format!("{}/tickets", self.api_base_url)
+            )
                 .json(&json!({
+                    "project_id": self.project_id,
                     "title": ticket_params.title,
                     "description": ticket_params.description.unwrap_or_default(),
                     "story_points": ticket_params.story_points,
@@ -181,8 +191,10 @@ impl JilityService {
         #[tool(param)] ticket_id: String,
     ) -> Result<String, String> {
 
-        let response = self.client
-            .get(format!("{}/tickets/{}", self.api_base_url, ticket_id))
+        let response = self.build_request(
+            reqwest::Method::GET,
+            format!("{}/tickets/{}", self.api_base_url, ticket_id)
+        )
             .send()
             .await
             .map_err(|e| format!("Failed to get ticket: {}", e))?;
@@ -252,8 +264,10 @@ impl JilityService {
             url.push_str(&query_params.join("&"));
         }
 
-        let response = self.client
-            .get(&url)
+        let response = self.build_request(
+            reqwest::Method::GET,
+            url
+        )
             .send()
             .await
             .map_err(|e| format!("Failed to list tickets: {}", e))?;
@@ -295,8 +309,10 @@ impl JilityService {
     ) -> Result<String, String> {
 
         // Assign to "agent"
-        let response = self.client
-            .post(format!("{}/tickets/{}/assign", self.api_base_url, ticket_id))
+        let response = self.build_request(
+            reqwest::Method::POST,
+            format!("{}/tickets/{}/assign", self.api_base_url, ticket_id)
+        )
             .json(&json!({ "assignee": "agent" }))
             .send()
             .await
@@ -307,8 +323,10 @@ impl JilityService {
         }
 
         // Update status to in_progress
-        let _ = self.client
-            .patch(format!("{}/tickets/{}/status", self.api_base_url, ticket_id))
+        let _ = self.build_request(
+            reqwest::Method::PATCH,
+            format!("{}/tickets/{}/status", self.api_base_url, ticket_id)
+        )
             .json(&json!({ "status": "in_progress" }))
             .send()
             .await;
@@ -325,8 +343,10 @@ impl JilityService {
         #[tool(aggr)] params: UpdateDescriptionParams,
     ) -> Result<String, String> {
 
-        let response = self.client
-            .patch(format!("{}/tickets/{}/description", self.api_base_url, params.ticket_id))
+        let response = self.build_request(
+            reqwest::Method::PATCH,
+            format!("{}/tickets/{}/description", self.api_base_url, params.ticket_id)
+        )
             .json(&json!({
                 "description": params.content,
                 "operation": params.operation.to_string()
@@ -383,8 +403,10 @@ impl JilityService {
         #[tool(param)] content: String,
     ) -> Result<String, String> {
 
-        let response = self.client
-            .post(format!("{}/tickets/{}/comments", self.api_base_url, ticket_id))
+        let response = self.build_request(
+            reqwest::Method::POST,
+            format!("{}/tickets/{}/comments", self.api_base_url, ticket_id)
+        )
             .json(&json!({
                 "author": "agent",
                 "content": content
@@ -412,8 +434,10 @@ impl JilityService {
     ) -> Result<String, String> {
 
         for assignee in &assignees {
-            let response = self.client
-                .post(format!("{}/tickets/{}/assign", self.api_base_url, ticket_id))
+            let response = self.build_request(
+                reqwest::Method::POST,
+                format!("{}/tickets/{}/assign", self.api_base_url, ticket_id)
+            )
                 .json(&json!({ "assignee": assignee }))
                 .send()
                 .await
@@ -442,8 +466,10 @@ impl JilityService {
         #[tool(param)] commit_message: Option<String>,
     ) -> Result<String, String> {
 
-        let response = self.client
-            .post(format!("{}/tickets/{}/commits", self.api_base_url, ticket_id))
+        let response = self.build_request(
+            reqwest::Method::POST,
+            format!("{}/tickets/{}/commits", self.api_base_url, ticket_id)
+        )
             .json(&json!({
                 "commit_hash": commit_hash,
                 "commit_message": commit_message,
@@ -473,8 +499,10 @@ impl JilityService {
         #[tool(param)] depends_on: String,
     ) -> Result<String, String> {
 
-        let response = self.client
-            .post(format!("{}/tickets/{}/dependencies", self.api_base_url, ticket_id))
+        let response = self.build_request(
+            reqwest::Method::POST,
+            format!("{}/tickets/{}/dependencies", self.api_base_url, ticket_id)
+        )
             .json(&json!({ "depends_on_id": depends_on }))
             .send()
             .await
@@ -500,11 +528,13 @@ impl JilityService {
         #[tool(param)] depends_on: String,
     ) -> Result<String, String> {
 
-        let response = self.client
-            .delete(format!(
+        let response = self.build_request(
+            reqwest::Method::DELETE,
+            format!(
                 "{}/tickets/{}/dependencies/{}",
                 self.api_base_url, ticket_id, depends_on
-            ))
+            )
+        )
             .send()
             .await
             .map_err(|e| format!("Failed to remove dependency: {}", e))?;
@@ -528,8 +558,10 @@ impl JilityService {
         #[tool(param)] ticket_id: String,
     ) -> Result<String, String> {
 
-        let response = self.client
-            .get(format!("{}/tickets/{}", self.api_base_url, ticket_id))
+        let response = self.build_request(
+            reqwest::Method::GET,
+            format!("{}/tickets/{}", self.api_base_url, ticket_id)
+        )
             .send()
             .await
             .map_err(|e| format!("Failed to get ticket: {}", e))?;
@@ -589,12 +621,14 @@ impl JilityService {
         #[tool(param)] limit: Option<u64>,
     ) -> Result<String, String> {
 
-        let response = self.client
-            .get(format!("{}/tickets/search?q={}&limit={}",
+        let response = self.build_request(
+            reqwest::Method::GET,
+            format!("{}/tickets/search?q={}&limit={}",
                 self.api_base_url,
                 urlencoding::encode(&query),
                 limit.unwrap_or(20)
-            ))
+            )
+        )
             .send()
             .await
             .map_err(|e| format!("Failed to search: {}", e))?;

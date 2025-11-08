@@ -1,5 +1,7 @@
 # Board Active Sprint Filter Implementation Plan
 
+> **Status:** ✅ COMPLETE (JIL-24)
+
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** Filter the Kanban board to show only tickets from the active sprint (like JIRA), with an option to toggle back to "All Tickets" view.
