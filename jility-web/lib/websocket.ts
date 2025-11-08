@@ -3,7 +3,7 @@
 import { useEffect, useRef, useCallback } from 'react'
 import type { WebSocketMessage } from './types'
 
-const WS_URL = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:3000/ws'
+const WS_URL = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:3900/ws'
 
 export function useWebSocket(onMessage: (message: WebSocketMessage) => void) {
   const ws = useRef<WebSocket | null>(null)
