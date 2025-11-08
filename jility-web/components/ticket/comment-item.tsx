@@ -5,6 +5,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { formatDate } from '@/lib/utils'
+import { useToast } from '@/hooks/use-toast'
 import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
 import {
   DropdownMenu,
@@ -37,6 +38,7 @@ interface CommentItemProps {
 }
 
 export function CommentItem({ comment, currentUser, onEdit, onDelete }: CommentItemProps) {
+  const { toast } = useToast()
   const [isEditing, setIsEditing] = useState(false)
   const [editedContent, setEditedContent] = useState(comment.content)
   const [isSaving, setIsSaving] = useState(false)
@@ -54,6 +56,11 @@ export function CommentItem({ comment, currentUser, onEdit, onDelete }: CommentI
       setIsEditing(false)
     } catch (error) {
       console.error('Failed to edit comment:', error)
+      toast({
+        title: 'Failed to edit comment',
+        description: 'Please try again',
+        variant: 'destructive',
+      })
     } finally {
       setIsSaving(false)
     }
@@ -67,6 +74,11 @@ export function CommentItem({ comment, currentUser, onEdit, onDelete }: CommentI
       setShowDeleteDialog(false)
     } catch (error) {
       console.error('Failed to delete comment:', error)
+      toast({
+        title: 'Failed to delete comment',
+        description: 'Please try again',
+        variant: 'destructive',
+      })
     }
   }
 

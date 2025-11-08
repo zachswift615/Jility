@@ -227,6 +227,7 @@ export const api = {
   deleteComment: async (id: string): Promise<{ success: boolean }> => {
     const res = await fetch(`${API_BASE}/comments/${id}`, {
       method: 'DELETE',
+      headers: getAuthHeaders(),
     })
     return handleResponse<{ success: boolean }>(res)
   },

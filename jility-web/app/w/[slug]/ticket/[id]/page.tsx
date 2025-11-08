@@ -1,15 +1,17 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
-import type { TicketDetails, WorkspaceMember } from '@/lib/types'
+import type { TicketDetails, WorkspaceMember, WebSocketMessage } from '@/lib/types'
 import { TicketHeader } from '@/components/ticket/ticket-header'
 import { TicketDescription } from '@/components/ticket/ticket-description'
 import { CommentsSection } from '@/components/ticket/comments-section'
 import { ActivityTimeline } from '@/components/ticket/activity-timeline'
 import { AssigneeSelector } from '@/components/ticket/assignee-selector'
 import { Button } from '@/components/ui/button'
+import { useToast } from '@/hooks/use-toast'
+import { useWebSocket } from '@/lib/websocket'
 import { ArrowLeft } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 
@@ -17,6 +19,7 @@ export default function TicketPage() {
   const params = useParams()
   const router = useRouter()
   const { user } = useAuth()
+  const { toast } = useToast()
   const slug = params.slug as string
   const ticketId = params.id as string
 
@@ -24,6 +27,16 @@ export default function TicketPage() {
   const [loading, setLoading] = useState(true)
   const [members, setMembers] = useState<WorkspaceMember[]>([])
   const [isLoadingMembers, setIsLoadingMembers] = useState(true)
+
+  // WebSocket handler for real-time updates
+  const handleWebSocketMessage = useCallback((message: WebSocketMessage) => {
+    // Refresh ticket when a comment is added to this ticket
+    if (message.type === 'comment_added' && message.ticket_id === ticketId) {
+      loadTicket()
+    }
+  }, [ticketId])
+
+  useWebSocket(handleWebSocketMessage)
 
   useEffect(() => {
     loadTicket()
@@ -100,6 +113,12 @@ export default function TicketPage() {
       await loadTicket()  // Refresh to get updated comment
     } catch (error) {
       console.error('Failed to edit comment:', error)
+      toast({
+        title: 'Failed to edit comment',
+        description: 'Please try again',
+        variant: 'destructive',
+      })
+      throw error
     }
   }
 
@@ -109,6 +128,12 @@ export default function TicketPage() {
       await loadTicket()  // Refresh to remove deleted comment
     } catch (error) {
       console.error('Failed to delete comment:', error)
+      toast({
+        title: 'Failed to delete comment',
+        description: 'Please try again',
+        variant: 'destructive',
+      })
+      throw error
     }
   }
 

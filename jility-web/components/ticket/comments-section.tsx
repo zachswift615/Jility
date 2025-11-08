@@ -5,6 +5,7 @@ import type { Comment } from '@/lib/types'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { CommentItem } from './comment-item'
+import { useToast } from '@/hooks/use-toast'
 import { MessageSquare, Send } from 'lucide-react'
 
 interface CommentsSectionProps {
@@ -22,6 +23,7 @@ export function CommentsSection({
   onEditComment,
   onDeleteComment,
 }: CommentsSectionProps) {
+  const { toast } = useToast()
   const [newComment, setNewComment] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -35,6 +37,11 @@ export function CommentsSection({
       setNewComment('')
     } catch (error) {
       console.error('Failed to add comment:', error)
+      toast({
+        title: 'Failed to add comment',
+        description: 'Please try again',
+        variant: 'destructive',
+      })
     } finally {
       setIsSubmitting(false)
     }
