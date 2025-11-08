@@ -1,322 +1,288 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import Link from 'next/link'
-import { BurndownChart } from '@/components/sprint/burndown-chart'
-import { calculateDaysRemaining, formatSprintDateRange } from '@/lib/sprint-utils'
+import { useState, useEffect, useCallback } from 'react'
+import { Calendar, Target, TrendingUp } from 'lucide-react'
+import { withAuth } from '@/lib/with-auth'
+import { useWorkspace } from '@/lib/workspace-context'
+import { useAuth } from '@/lib/auth-context'
+import { api } from '@/lib/api'
+import type { Sprint, SprintDetails } from '@/lib/types'
+import { CompleteSprintDialog } from '@/components/sprint/complete-sprint-dialog'
 
-interface Sprint {
-  id: string
-  name: string
-  goal?: string
-  status: string
-  start_date?: string
-  end_date?: string
-}
-
-interface SprintStats {
-  total_tickets: number
-  total_points: number
-  completed_tickets: number
-  completed_points: number
-  in_progress_tickets: number
-  in_progress_points: number
-  todo_tickets: number
-  todo_points: number
-  completion_percentage: number
-}
-
-interface Ticket {
-  id: string
-  number: string
-  title: string
-  story_points?: number
-  status: string
-}
-
-interface BurndownData {
-  sprint_id: string
-  data_points: Array<{
-    date: string
-    ideal: number
-    actual: number
-  }>
-}
-
-interface PageProps {
-  params: { slug: string }
-}
-
-export default function ActiveSprintPage({ params }: PageProps) {
-  const [sprint, setSprint] = useState<Sprint | null>(null)
-  const [stats, setStats] = useState<SprintStats | null>(null)
-  const [tickets, setTickets] = useState<Ticket[]>([])
-  const [burndownData, setBurndownData] = useState<BurndownData | null>(null)
+function ActiveSprintContent() {
+  const [sprint, setSprint] = useState<SprintDetails | null>(null)
   const [loading, setLoading] = useState(true)
+  const [showCompleteDialog, setShowCompleteDialog] = useState(false)
+  const { currentWorkspace } = useWorkspace()
+  const { user } = useAuth()
+  const slug = currentWorkspace?.slug || ''
 
-  const projectId = '550e8400-e29b-41d4-a716-446655440000' // TODO: Get from context/params
-
-  useEffect(() => {
-    fetchActiveSprint()
-  }, [])
-
-  async function fetchActiveSprint() {
+  const fetchActiveSprint = useCallback(async () => {
+    if (!slug) return
     try {
-      // Fetch active sprint
-      const sprintsRes = await fetch(
-        `http://localhost:3001/api/projects/${projectId}/sprints?status=active`
-      )
-      if (!sprintsRes.ok) throw new Error('Failed to fetch sprints')
-
-      const sprints = await sprintsRes.json()
-      if (sprints.length === 0) {
-        setLoading(false)
-        return
-      }
-
-      const activeSprint = sprints[0]
-      setSprint(activeSprint)
-
-      // Fetch sprint details
-      const detailsRes = await fetch(`http://localhost:3001/api/sprints/${activeSprint.id}`)
-      if (detailsRes.ok) {
-        const details = await detailsRes.json()
-        setStats(details.stats)
-        setTickets(details.tickets)
-      }
-
-      // Fetch burndown data
-      const burndownRes = await fetch(`http://localhost:3001/api/sprints/${activeSprint.id}/burndown`)
-      if (burndownRes.ok) {
-        const data = await burndownRes.json()
-        setBurndownData(data)
+      const sprints = await api.listSprints(slug, 'active')
+      if (sprints.length > 0) {
+        const details = await api.getSprint(sprints[0].id)
+        setSprint(details)
       }
     } catch (error) {
-      console.error('Error fetching active sprint:', error)
+      console.error('Failed to fetch active sprint:', error)
     } finally {
       setLoading(false)
     }
+  }, [slug])
+
+  useEffect(() => {
+    fetchActiveSprint()
+  }, [fetchActiveSprint])
+
+  async function handleCompleteClick() {
+    setShowCompleteDialog(true)
   }
 
-  async function completeSprint() {
-    if (!sprint) return
+  async function handleCompleteConfirm(action: 'rollover' | 'backlog' | 'keep') {
+    if (!sprint || !slug || !user) return
 
-    const confirmed = confirm('Are you sure you want to complete this sprint?')
-    if (!confirmed) return
+    const incompleteTickets = sprint.tickets.filter(t => t.status !== 'done')
 
     try {
-      const res = await fetch(`http://localhost:3001/api/sprints/${sprint.id}/complete`, {
-        method: 'POST',
-      })
+      if (action === 'rollover' && incompleteTickets.length > 0) {
+        // Generate next sprint name using improved logic from Task 4
+        const currentName = sprint.sprint.name
+        let nextName = 'Sprint 1'
 
-      if (res.ok) {
-        window.location.href = '/sprint/history'
+        // Try to extract number from current sprint name
+        const match = currentName.match(/(\d+)/)
+        if (match) {
+          const num = parseInt(match[1])
+          const prefix = currentName.substring(0, match.index)
+          const suffix = currentName.substring(match.index! + match[1].length)
+          nextName = `${prefix}${num + 1}${suffix}`
+        } else {
+          // No number found, append " 2" to current name
+          nextName = `${currentName} 2`
+        }
+
+        // Create next sprint
+        const nextSprint = await api.createSprint(slug, {
+          name: nextName,
+          goal: sprint.sprint.goal, // Copy goal from current sprint
+        })
+
+        // Move incomplete tickets to next sprint
+        for (const ticket of incompleteTickets) {
+          await api.removeTicketFromSprint(sprint.sprint.id, ticket.id)
+          await api.addTicketToSprint(nextSprint.id, ticket.id, user.email)
+        }
+      } else if (action === 'backlog' && incompleteTickets.length > 0) {
+        // Remove from sprint and set to backlog status
+        for (const ticket of incompleteTickets) {
+          await api.removeTicketFromSprint(sprint.sprint.id, ticket.id)
+          await api.updateTicketStatus(ticket.id, 'backlog')
+        }
       }
+      // If 'keep', we don't do anything with the incomplete tickets
+
+      // Complete the sprint
+      await api.completeSprint(sprint.sprint.id)
+
+      // Redirect to history
+      window.location.href = `/w/${slug}/sprint/history`
     } catch (error) {
       console.error('Failed to complete sprint:', error)
+      throw error
     }
   }
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-gray-600 dark:text-gray-400">Loading...</div>
+        <div className="text-muted-foreground">Loading...</div>
       </div>
     )
   }
 
   if (!sprint) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">No Active Sprint</h1>
-          <p className="text-gray-600 dark:text-gray-400 mb-6">
-            There is no active sprint. Start a sprint from the planning view.
+      <div className="container mx-auto px-3 md:px-6 py-4 md:py-8">
+        <div className="text-center py-12">
+          <h1 className="text-2xl md:text-3xl font-bold mb-4">No Active Sprint</h1>
+          <p className="text-muted-foreground mb-6">
+            Start a sprint from the planning page to begin tracking progress.
           </p>
-          <Link
-            href={`/w/${params.slug}/sprint/planning`}
-            className="inline-block px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+          <a
+            href={`/w/${slug}/sprint/planning`}
+            className="inline-block px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:opacity-90"
           >
             Go to Sprint Planning
-          </Link>
+          </a>
         </div>
       </div>
     )
   }
 
-  const daysRemaining = sprint.end_date ? calculateDaysRemaining(sprint.end_date) : 0
-  const dateRange = sprint.start_date && sprint.end_date
-    ? formatSprintDateRange(sprint.start_date, sprint.end_date)
-    : ''
+  const { stats } = sprint
+  const daysRemaining = sprint.sprint.end_date
+    ? Math.max(0, Math.ceil((new Date(sprint.sprint.end_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+    : null
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-3 md:px-6 py-4 md:py-8">
       {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-4">
+      <div className="mb-6 md:mb-8">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-3xl font-bold mb-2">{sprint.name}</h1>
-            {sprint.goal && (
-              <p className="text-gray-600 dark:text-gray-400">{sprint.goal}</p>
+            <h1 className="text-2xl md:text-3xl font-bold mb-2">{sprint.sprint.name}</h1>
+            {sprint.sprint.goal && (
+              <p className="text-muted-foreground">{sprint.sprint.goal}</p>
             )}
-            <p className="text-sm text-gray-500 dark:text-gray-500 mt-1">
-              {dateRange} • {daysRemaining > 0 ? `${daysRemaining} days remaining` : 'Sprint ended'}
-            </p>
           </div>
           <button
-            onClick={completeSprint}
-            className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors"
+            onClick={handleCompleteClick}
+            className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 self-start md:self-auto"
           >
             Complete Sprint
           </button>
         </div>
 
-        {/* Progress Bar */}
-        {stats && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                {stats.completed_points}/{stats.total_points} points completed
-              </span>
-              <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
-                {Math.round(stats.completion_percentage)}%
-              </span>
+        {/* Sprint Info Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Days Remaining */}
+          {daysRemaining !== null && (
+            <div className="bg-card border-border border rounded-lg p-4">
+              <div className="flex items-center gap-2 text-muted-foreground mb-2">
+                <Calendar className="h-4 w-4" />
+                <span className="text-sm font-medium">Days Remaining</span>
+              </div>
+              <div className="text-2xl font-bold">{daysRemaining}</div>
             </div>
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+          )}
+
+          {/* Sprint Goal */}
+          {sprint.sprint.goal && (
+            <div className="bg-card border-border border rounded-lg p-4">
+              <div className="flex items-center gap-2 text-muted-foreground mb-2">
+                <Target className="h-4 w-4" />
+                <span className="text-sm font-medium">Sprint Goal</span>
+              </div>
+              <div className="text-sm line-clamp-2">{sprint.sprint.goal}</div>
+            </div>
+          )}
+
+          {/* Completion */}
+          <div className="bg-card border-border border rounded-lg p-4">
+            <div className="flex items-center gap-2 text-muted-foreground mb-2">
+              <TrendingUp className="h-4 w-4" />
+              <span className="text-sm font-medium">Completion</span>
+            </div>
+            <div className="text-2xl font-bold">
+              {Math.round(stats.completion_percentage)}%
+            </div>
+            <div className="text-sm text-muted-foreground mt-1">
+              {stats.completed_points}/{stats.total_points} pts
+            </div>
+          </div>
+
+          {/* Tickets */}
+          <div className="bg-card border-border border rounded-lg p-4">
+            <div className="flex items-center gap-2 text-muted-foreground mb-2">
+              <span className="text-sm font-medium">Tickets</span>
+            </div>
+            <div className="text-2xl font-bold">{stats.total_tickets}</div>
+            <div className="text-sm text-muted-foreground mt-1">
+              {stats.completed_tickets} done
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Progress Bar */}
+      <div className="bg-card border-border border rounded-lg p-4 md:p-6 mb-6">
+        <h3 className="font-semibold mb-4">Sprint Progress</h3>
+        <div className="space-y-3">
+          <div>
+            <div className="flex justify-between text-sm mb-1">
+              <span>Completed</span>
+              <span className="font-medium">{stats.completed_points} pts</span>
+            </div>
+            <div className="w-full bg-secondary rounded-full h-2">
               <div
-                className="h-3 rounded-full bg-blue-600 transition-all"
-                style={{ width: `${Math.min(stats.completion_percentage, 100)}%` }}
+                className="bg-green-600 h-2 rounded-full transition-all"
+                style={{ width: `${stats.total_points > 0 ? (stats.completed_points / stats.total_points) * 100 : 0}%` }}
               />
             </div>
-            <div className="grid grid-cols-4 gap-4 mt-4">
-              <div>
-                <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                  {stats.total_tickets}
-                </div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">Total Tickets</div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-                  {stats.completed_tickets}
-                </div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">Completed</div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                  {stats.in_progress_tickets}
-                </div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">In Progress</div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-gray-600 dark:text-gray-400">
-                  {stats.todo_tickets}
-                </div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">To Do</div>
-              </div>
+          </div>
+          <div>
+            <div className="flex justify-between text-sm mb-1">
+              <span>In Progress</span>
+              <span className="font-medium">{stats.in_progress_points} pts</span>
+            </div>
+            <div className="w-full bg-secondary rounded-full h-2">
+              <div
+                className="bg-yellow-600 h-2 rounded-full transition-all"
+                style={{ width: `${stats.total_points > 0 ? (stats.in_progress_points / stats.total_points) * 100 : 0}%` }}
+              />
             </div>
           </div>
-        )}
-      </div>
-
-      {/* Burndown Chart */}
-      {burndownData && (
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold mb-4">Burndown Chart</h2>
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-            <BurndownChart data={burndownData} />
-          </div>
-        </div>
-      )}
-
-      {/* Sprint Tickets */}
-      <div>
-        <h2 className="text-2xl font-bold mb-4">Sprint Tickets</h2>
-        <div className="grid grid-cols-3 gap-6">
-          {/* To Do */}
           <div>
-            <h3 className="font-semibold mb-3 text-gray-700 dark:text-gray-300">
-              To Do ({tickets.filter(t => t.status === 'todo' || t.status === 'backlog').length})
-            </h3>
-            <div className="space-y-2">
-              {tickets
-                .filter(t => t.status === 'todo' || t.status === 'backlog')
-                .map(ticket => (
-                  <a
-                    key={ticket.id}
-                    href={`/ticket/${ticket.id}`}
-                    className="block p-4 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 hover:border-blue-500 transition-colors"
-                  >
-                    <div className="font-medium text-sm mb-1">{ticket.number}</div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">
-                      {ticket.title}
-                    </div>
-                    {ticket.story_points && (
-                      <div className="mt-2 inline-block px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded text-xs">
-                        {ticket.story_points} pts
-                      </div>
-                    )}
-                  </a>
-                ))}
+            <div className="flex justify-between text-sm mb-1">
+              <span>To Do</span>
+              <span className="font-medium">{stats.todo_points} pts</span>
             </div>
-          </div>
-
-          {/* In Progress */}
-          <div>
-            <h3 className="font-semibold mb-3 text-gray-700 dark:text-gray-300">
-              In Progress ({tickets.filter(t => t.status === 'in_progress').length})
-            </h3>
-            <div className="space-y-2">
-              {tickets
-                .filter(t => t.status === 'in_progress')
-                .map(ticket => (
-                  <a
-                    key={ticket.id}
-                    href={`/ticket/${ticket.id}`}
-                    className="block p-4 bg-white dark:bg-gray-800 rounded border border-blue-200 dark:border-blue-700 hover:border-blue-500 transition-colors"
-                  >
-                    <div className="font-medium text-sm mb-1">{ticket.number}</div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">
-                      {ticket.title}
-                    </div>
-                    {ticket.story_points && (
-                      <div className="mt-2 inline-block px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded text-xs">
-                        {ticket.story_points} pts
-                      </div>
-                    )}
-                  </a>
-                ))}
-            </div>
-          </div>
-
-          {/* Done */}
-          <div>
-            <h3 className="font-semibold mb-3 text-gray-700 dark:text-gray-300">
-              Done ({tickets.filter(t => t.status === 'done').length})
-            </h3>
-            <div className="space-y-2">
-              {tickets
-                .filter(t => t.status === 'done')
-                .map(ticket => (
-                  <a
-                    key={ticket.id}
-                    href={`/ticket/${ticket.id}`}
-                    className="block p-4 bg-white dark:bg-gray-800 rounded border border-green-200 dark:border-green-700 hover:border-green-500 transition-colors"
-                  >
-                    <div className="font-medium text-sm mb-1">{ticket.number}</div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">
-                      {ticket.title}
-                    </div>
-                    {ticket.story_points && (
-                      <div className="mt-2 inline-block px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded text-xs">
-                        {ticket.story_points} pts
-                      </div>
-                    )}
-                  </a>
-                ))}
+            <div className="w-full bg-secondary rounded-full h-2">
+              <div
+                className="bg-muted h-2 rounded-full transition-all"
+                style={{ width: `${stats.total_points > 0 ? (stats.todo_points / stats.total_points) * 100 : 0}%` }}
+              />
             </div>
           </div>
         </div>
       </div>
+
+      {/* Tickets List */}
+      <div className="bg-card border-border border rounded-lg p-4 md:p-6">
+        <h3 className="font-semibold mb-4">Sprint Tickets ({sprint.tickets.length})</h3>
+        <div className="space-y-2">
+          {sprint.tickets.map(ticket => (
+            <a
+              key={ticket.id}
+              href={`/w/${slug}/ticket/${ticket.id}`}
+              className="block p-4 bg-secondary rounded border-border border hover:border-primary transition-colors"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-3">
+                    <span className="font-medium text-sm">{ticket.number}</span>
+                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                      ticket.status === 'done' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' :
+                      ticket.status === 'in_progress' ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200' :
+                      'bg-muted text-muted-foreground'
+                    }`}>
+                      {ticket.status}
+                    </span>
+                  </div>
+                  <div className="text-sm mt-1 truncate">{ticket.title}</div>
+                </div>
+                {ticket.story_points && (
+                  <div className="ml-4 px-2 py-1 bg-primary/10 text-primary rounded text-sm font-medium flex-shrink-0">
+                    {ticket.story_points} pts
+                  </div>
+                )}
+              </div>
+            </a>
+          ))}
+        </div>
+      </div>
+
+      <CompleteSprintDialog
+        isOpen={showCompleteDialog}
+        onClose={() => setShowCompleteDialog(false)}
+        onConfirm={handleCompleteConfirm}
+        incompleteTickets={sprint?.tickets.filter(t => t.status !== 'done') || []}
+        sprintName={sprint?.sprint.name || ''}
+      />
     </div>
   )
 }
+
+export default withAuth(ActiveSprintContent)
