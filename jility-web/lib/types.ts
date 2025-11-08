@@ -254,3 +254,63 @@ export interface WorkspaceResponse {
   role: 'admin' | 'member'
   created_at: string
 }
+
+export interface Sprint {
+  id: string
+  project_id: string
+  name: string
+  goal?: string
+  status: 'planning' | 'active' | 'completed'
+  start_date?: string
+  end_date?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface SprintStats {
+  total_tickets: number
+  total_points: number
+  completed_tickets: number
+  completed_points: number
+  in_progress_tickets: number
+  in_progress_points: number
+  todo_tickets: number
+  todo_points: number
+  completion_percentage: number
+}
+
+export interface SprintDetails {
+  sprint: Sprint
+  tickets: Ticket[]
+  stats: SprintStats
+}
+
+export interface BurndownDataPoint {
+  date: string
+  ideal: number
+  actual: number
+}
+
+export interface BurndownData {
+  sprint_id: string
+  data_points: BurndownDataPoint[]
+}
+
+export interface VelocityData {
+  sprint_name: string
+  completed_points: number
+}
+
+export interface SprintHistory {
+  sprints: Sprint[]
+  velocity_data: VelocityData[]
+  average_velocity: number
+}
+
+export interface WorkspaceSettings {
+  sprint_capacity?: number
+}
+
+export interface WorkspaceWithSettings extends WorkspaceResponse {
+  settings: WorkspaceSettings
+}
