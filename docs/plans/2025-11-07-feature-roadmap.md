@@ -24,6 +24,66 @@ This document outlines the next major features for Jility, organized by priority
 
 ---
 
+## Risk Assessment & Infrastructure Needs
+
+### High-Risk Features (Plan Carefully)
+
+**Global Search (4.1)** ⚠️
+- **Risk:** Performance degradation with 10K+ tickets
+- **Mitigation:** Implement SQLite FTS5 indexing from the start
+- **Fallback:** Consider external search service (Meilisearch/Typesense) if SQLite FTS5 insufficient
+- **Decision Point:** Test with 10K+ tickets before production
+
+**AI Epic Breakdown (5.2)** ⚠️
+- **Risk:** API costs can escalate quickly
+- **Mitigation:**
+  - Rate limiting (max 10 requests/hour/user)
+  - Cost tracking dashboard
+  - User confirmation before API call
+- **Decision Point:** Budget $50-100/month for API costs initially
+
+**GitHub Webhooks (5.3)** ⚠️
+- **Risk:** Development requires public URL (ngrok/tunneling)
+- **Mitigation:**
+  - Use ngrok for local dev
+  - Document webhook setup clearly
+  - Implement webhook signature verification from day 1
+- **Security:** NEVER skip signature verification in production
+
+### Missing Infrastructure (Address Before Phase 1)
+
+**Authentication & User Context** 🔧
+- How is current user determined in components?
+- Where is workspace context stored?
+- Document auth flow before starting frontend work
+
+**Error Boundaries** 🔧
+- React error boundaries for graceful failures
+- Global error handler for API failures
+- User-friendly error messages
+
+**Testing Infrastructure** 🔧
+- Set up Playwright for integration tests
+- Create test data generator (realistic volume)
+- CI/CD pipeline for automated testing
+
+**Performance Monitoring** 🔧
+- How will you track metrics?
+- Set up basic logging (API response times, error rates)
+- User session tracking (optional but recommended)
+
+### Pre-Phase 1 Checklist
+
+Before starting any implementation:
+- [ ] Create Jility tickets from this roadmap (use `create-roadmap-tickets.ts`)
+- [ ] Generate test data (100+ tickets, 5+ users)
+- [ ] Document current auth/user context approach
+- [ ] Verify WebSocket real-time updates work
+- [ ] Set up error boundaries in React app
+- [ ] Create integration test template
+
+---
+
 ## Phase 1: Core Collaboration (Weeks 1-2)
 
 ### 1.1 Comments System ⭐ **START HERE**
@@ -473,30 +533,32 @@ const handleDeleteComment = async (id: string) => {
 
 ## Phase 2: Sprint Planning (Weeks 2-3)
 
-### 2.1 Fix Sprint Planning Page ⭐
+**⚠️ BREAKING DOWN LARGE FEATURE:** Sprint Planning is split into 4 smaller sub-features for easier implementation and testing.
 
-**Status:** 🟡 Partial (page exists but broken)
-**Effort:** 4-5 days
-**Priority:** High
+### 2.1 Sprint Backend API ⭐ **START HERE**
 
-#### Why This Matters?
-- Managers need sprint planning
-- Unlocks burndown charts
-- Backend infrastructure ready
-- Enables agile workflow
+**Status:** 🟡 Partial (tables exist, API needs audit)
+**Effort:** 1-2 days
+**Priority:** High (blocks all other sprint features)
+
+#### Why This First?
+- Foundation for all sprint features
+- Backend-first approach prevents rework
+- Easier to test in isolation
+- Tables already exist
 
 #### Backend Status ✅
-- Tables: `sprints`, `sprint_tickets`
-- Entities: Sprint, SprintTicket
-- API: Needs investigation (some endpoints may exist)
-
-#### Investigation Needed (30 min)
-1. Find existing sprint page: `jility-web/app/w/[slug]/sprints/*`
-2. Check what's broken
-3. List missing API endpoints
-4. Document current state
+- Tables: `sprints`, `sprint_tickets` ✅
+- Entities: Sprint, SprintTicket ✅
+- API: Needs investigation ⚠️
 
 #### Implementation Steps
+
+**Step 1: Investigation** (30 min)
+1. Find `jility-server/src/api/sprints.rs` (or check if it exists)
+2. List existing endpoints
+3. Identify missing endpoints
+4. Document current state
 
 **Step 1: Audit Backend API** (1 hour)
 File: `jility-server/src/api/sprints.rs`

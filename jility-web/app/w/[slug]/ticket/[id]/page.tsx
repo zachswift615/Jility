@@ -11,10 +11,12 @@ import { ActivityTimeline } from '@/components/ticket/activity-timeline'
 import { AssigneeSelector } from '@/components/ticket/assignee-selector'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft } from 'lucide-react'
+import { useAuth } from '@/lib/auth-context'
 
 export default function TicketPage() {
   const params = useParams()
   const router = useRouter()
+  const { user } = useAuth()
   const slug = params.slug as string
   const ticketId = params.id as string
 
@@ -89,6 +91,24 @@ export default function TicketPage() {
       await loadTicket()
     } catch (error) {
       console.error('Failed to add comment:', error)
+    }
+  }
+
+  const handleEditComment = async (id: string, content: string) => {
+    try {
+      await api.updateComment(id, content)
+      await loadTicket()  // Refresh to get updated comment
+    } catch (error) {
+      console.error('Failed to edit comment:', error)
+    }
+  }
+
+  const handleDeleteComment = async (id: string) => {
+    try {
+      await api.deleteComment(id)
+      await loadTicket()  // Refresh to remove deleted comment
+    } catch (error) {
+      console.error('Failed to delete comment:', error)
     }
   }
 
@@ -199,7 +219,10 @@ export default function TicketPage() {
 
           <CommentsSection
             comments={ticketDetails.comments}
+            currentUser={user?.email || 'system'}
             onAddComment={handleAddComment}
+            onEditComment={handleEditComment}
+            onDeleteComment={handleDeleteComment}
           />
         </div>
 
