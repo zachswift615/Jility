@@ -189,6 +189,7 @@ const tickets = await api.listTickets({ status: 'todo' })
 
 // Create ticket
 const ticket = await api.createTicket({
+  project_id: 'project-id',
   title: 'New Feature',
   description: 'Build something cool',
   status: 'todo',

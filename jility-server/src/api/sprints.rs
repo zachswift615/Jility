@@ -148,6 +148,7 @@ pub async fn get_sprint(
     } else {
         Ticket::find()
             .filter(ticket::Column::Id.is_in(ticket_ids))
+            .filter(ticket::Column::DeletedAt.is_null())
             .all(state.db.as_ref())
             .await
             .map_err(ApiError::from)?
@@ -213,17 +214,19 @@ pub async fn get_sprint(
         .map(|t| TicketResponse {
             id: format_uuid(&t.id),
             number: format!("TASK-{}", t.ticket_number),
-            title: t.title,
-            description: t.description,
-            status: t.status,
+            title: t.title.clone(),
+            description: t.description.clone(),
+            status: t.status.clone(),
             story_points: t.story_points,
             assignees: vec![],
             labels: vec![],
             created_at: format_datetime(&t.created_at),
             updated_at: format_datetime(&t.updated_at),
-            created_by: t.created_by,
+            created_by: t.created_by.clone(),
             parent_id: t.parent_id.map(|id| format_uuid(&id)),
             epic_id: t.epic_id.map(|id| format_uuid(&id)),
+            is_epic: t.is_epic,
+            epic_color: t.epic_color.clone(),
         })
         .collect();
 
@@ -433,6 +436,7 @@ pub async fn add_ticket_to_sprint(
 
     // Verify ticket exists
     Ticket::find_by_id(ticket_uuid)
+        .filter(ticket::Column::DeletedAt.is_null())
         .one(state.db.as_ref())
         .await
         .map_err(ApiError::from)?
@@ -541,6 +545,7 @@ pub async fn get_sprint_stats(
     } else {
         Ticket::find()
             .filter(ticket::Column::Id.is_in(ticket_ids))
+            .filter(ticket::Column::DeletedAt.is_null())
             .all(state.db.as_ref())
             .await
             .map_err(ApiError::from)?
@@ -634,6 +639,7 @@ pub async fn get_burndown(
     } else {
         Ticket::find()
             .filter(ticket::Column::Id.is_in(ticket_ids))
+            .filter(ticket::Column::DeletedAt.is_null())
             .all(state.db.as_ref())
             .await
             .map_err(ApiError::from)?

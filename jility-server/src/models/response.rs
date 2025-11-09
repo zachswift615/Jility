@@ -33,6 +33,8 @@ pub struct TicketResponse {
     pub created_by: String,
     pub parent_id: Option<String>,
     pub epic_id: Option<String>,
+    pub is_epic: bool,
+    pub epic_color: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -80,7 +82,7 @@ pub struct ChangeEventResponse {
     pub field_name: Option<String>,
     pub old_value: Option<String>,
     pub new_value: Option<String>,
-    pub changed_by: String,
+    pub user_name: String,
     pub changed_at: String,
     pub message: Option<String>,
 }
@@ -89,7 +91,7 @@ pub struct ChangeEventResponse {
 pub struct HistoryVersionResponse {
     pub version: i32,
     pub description: String,
-    pub changed_by: String,
+    pub user_name: String,
     pub changed_at: String,
 }
 

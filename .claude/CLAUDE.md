@@ -721,6 +721,11 @@ The Jility MCP server is configured in `.mcp.json` and provides the following to
   - Parameters: `ticket_id`, `content`, `operation` (replace_all, append, prepend, replace_lines, replace_section)
 
 ### Collaboration
+- **`mcp__jility__get_comments`** - Get all comments for a ticket
+  - Parameters: `ticket_id` (supports both UUID and ticket number format like JIL-42)
+  - Returns: Array of comments with author, content, timestamps
+  - **Use case:** Agents read comment threads before starting work on a ticket
+
 - **`mcp__jility__add_comment`** - Add a comment to a ticket
   - Parameters: `ticket_id`, `content`
   - Supports `@mentions` for notifications
@@ -733,6 +738,12 @@ The Jility MCP server is configured in `.mcp.json` and provides the following to
 - **`mcp__jility__claim_ticket`** - Claim an unassigned ticket
   - Parameters: `ticket_id`
   - Auto-assigns to agent and moves to `in_progress`
+
+- **`mcp__jility__delete_ticket`** - Soft delete a ticket
+  - Parameters: `ticket_id` (supports both UUID and ticket number format like JIL-42)
+  - **Soft delete:** Ticket is marked as deleted but preserved in database for audit trail
+  - Returns: Success confirmation
+  - **Use case:** Clean up test tickets, mistakes, or duplicates
 
 ### Dependencies
 - **`mcp__jility__add_dependency`** - Mark ticket dependency
@@ -758,6 +769,20 @@ The Jility MCP server is configured in `.mcp.json` and provides the following to
 - **`mcp__jility__create_from_template`** - Create ticket from template
   - Parameters: `template`, `variables` (for substitution)
 
+### Epic Management
+- **`mcp__jility__create_epic`** - Create a new epic
+  - Parameters: `title`, `description`, `epic_color` (optional hex color like "#3b82f6")
+  - Returns: Created epic with ID and number (e.g., JIL-42)
+  - **Use case:** Organize related tickets into themed work packages
+
+- **`mcp__jility__list_epics`** - List all epics with progress tracking
+  - Parameters: None
+  - Returns: Array of epics with progress statistics (total/done/in_progress/todo counts, completion percentage)
+  - **Use case:** View project organization and epic completion status
+
+**Assigning Tickets to Epics:**
+When creating or updating tickets, use the `parent_epic_id` parameter to link tickets to epics. Use `mcp__jility__create_ticket()` with the `parent_epic_id` field or `mcp__jility__list_tickets()` with the `epic_id` filter.
+
 ### Git Integration
 - **`mcp__jility__link_commit`** - Link a git commit to a ticket
   - Parameters: `ticket_id`, `commit_hash`, `commit_message`
@@ -775,22 +800,33 @@ mcp__jility__create_ticket({
 })
 ```
 
-### Planning a Sprint
+### Planning with Epics
 ```typescript
-// List backlog tickets
-const backlog = await mcp__jility__list_tickets({
-  status: ["backlog"],
-  limit: 20
+// Create an epic to organize related work
+const epic = await mcp__jility__create_epic({
+  title: "User Authentication System",
+  description: "Complete user authentication with login, registration, and password reset",
+  epic_color: "#3b82f6"
 })
 
-// Create tickets for a new epic
+// Create tickets for the epic
 await mcp__jility__create_tickets_batch({
-  parent_id: "epic-id",
+  parent_id: epic.id,
   tickets: [
-    { title: "Task 1", story_points: 2, labels: ["frontend"] },
-    { title: "Task 2", story_points: 3, labels: ["backend"] },
-    { title: "Task 3", story_points: 5, labels: ["testing"] }
+    { title: "Design auth database schema", story_points: 2, labels: ["backend", "database"] },
+    { title: "Implement JWT authentication", story_points: 5, labels: ["backend"] },
+    { title: "Build login UI", story_points: 3, labels: ["frontend", "ui"] },
+    { title: "Add password reset flow", story_points: 3, labels: ["backend", "frontend"] }
   ]
+})
+
+// View epic progress
+const epics = await mcp__jility__list_epics()
+// Shows: "User Authentication System: 0/4 tasks completed (0%)"
+
+// Filter tickets by epic
+const authTickets = await mcp__jility__list_tickets({
+  epic_id: epic.id
 })
 ```
 
@@ -817,10 +853,12 @@ await mcp__jility__update_status({
 1. **Always set story points** when creating tickets - helps with sprint planning
 2. **Use descriptive titles** - should be clear without reading the description
 3. **Add labels** for categorization - use consistent label names (frontend, backend, bug, feature, etc.)
-4. **Link related tickets** - use dependencies to track blockers
-5. **Update status regularly** - keep the board accurate
-6. **Add comments for context** - explain decisions and progress
-7. **Use batch operations** when creating multiple related tickets
+4. **Organize with epics** - group related tickets into epics for better project organization
+5. **Link related tickets** - use dependencies to track blockers
+6. **Update status regularly** - keep the board accurate
+7. **Add comments for context** - explain decisions and progress
+8. **Use batch operations** when creating multiple related tickets
+9. **Check epic progress** - use `list_epics()` to track completion of themed work packages
 
 ---
 

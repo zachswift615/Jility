@@ -10,14 +10,16 @@ import { withAuth } from '@/lib/with-auth'
 import { useAuth } from '@/lib/auth-context'
 import { api } from '@/lib/api'
 import { useWorkspace } from '@/lib/workspace-context'
-import type { WorkspaceMember, Ticket, Sprint } from '@/lib/types'
+import type { WorkspaceMember, Ticket, Sprint, Epic } from '@/lib/types'
 import { SprintFilter } from '@/components/board/sprint-filter'
+import { EpicFilter } from '@/components/board/epic-filter'
 
 function BoardContent() {
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [members, setMembers] = useState<WorkspaceMember[]>([])
   const [activeSprint, setActiveSprint] = useState<Sprint | null>(null)
   const [activeSprintTicketIds, setActiveSprintTicketIds] = useState<Set<string>>(new Set())
+  const [epics, setEpics] = useState<Epic[]>([])
   const { user } = useAuth()
   const { currentWorkspace } = useWorkspace()
   const slug = currentWorkspace?.slug || ''
@@ -65,10 +67,21 @@ function BoardContent() {
     }
   }, [slug])
 
+  // Fetch epics on mount
+  const loadEpics = useCallback(async () => {
+    try {
+      const data = await api.listEpics()
+      setEpics(data)
+    } catch (error) {
+      console.error('Failed to load epics:', error)
+    }
+  }, [])
+
   useEffect(() => {
     loadMembers()
     loadActiveSprint()
-  }, [loadMembers, loadActiveSprint])
+    loadEpics()
+  }, [loadMembers, loadActiveSprint, loadEpics])
 
   // Filter tickets by assignee
   const getFilteredTickets = (tickets: Ticket[]) => {
@@ -109,7 +122,22 @@ function BoardContent() {
     return tickets.filter((ticket) => activeSprintTicketIds.has(ticket.id))
   }
 
-  // Combine both filters
+  // Filter tickets by epic
+  const getEpicFilteredTickets = (tickets: Ticket[]) => {
+    const epicFilter = searchParams.get('epic')
+
+    if (!epicFilter) {
+      return tickets
+    }
+
+    if (epicFilter === 'none') {
+      return tickets.filter((ticket) => !ticket.epic_id)
+    }
+
+    return tickets.filter((ticket) => ticket.epic_id === epicFilter)
+  }
+
+  // Combine all filters
   const applyAllFilters = (tickets: Ticket[]) => {
     let filtered = tickets
 
@@ -122,6 +150,9 @@ function BoardContent() {
     // Then apply sprint filter
     filtered = getSprintFilteredTickets(filtered)
 
+    // Then apply epic filter
+    filtered = getEpicFilteredTickets(filtered)
+
     return filtered
   }
 
@@ -131,12 +162,13 @@ function BoardContent() {
         {/* Toolbar with filters */}
         <div className="flex items-center gap-2 px-4 md:px-6 pt-4 pb-2">
           <SprintFilter hasActiveSprint={!!activeSprint} />
+          <EpicFilter epics={epics} />
           <AssigneeFilter members={members} currentUserEmail={user?.email} />
         </div>
 
         {/* Board */}
         <div className="flex-1 overflow-hidden">
-          <KanbanBoard filterFn={applyAllFilters} />
+          <KanbanBoard filterFn={applyAllFilters} epics={epics} />
         </div>
       </div>
 

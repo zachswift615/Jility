@@ -11,7 +11,7 @@ import {
   useSensors,
   DragStartEvent,
 } from '@dnd-kit/core'
-import type { Ticket, TicketStatus, WebSocketMessage } from '@/lib/types'
+import type { Ticket, TicketStatus, WebSocketMessage, Epic } from '@/lib/types'
 import { api } from '@/lib/api'
 import { useWebSocket } from '@/lib/websocket'
 import { useWorkspace } from '@/lib/workspace-context'
@@ -24,9 +24,10 @@ const STATUSES: TicketStatus[] = ['backlog', 'todo', 'in_progress', 'review', 'd
 
 interface KanbanBoardProps {
   filterFn?: (tickets: Ticket[]) => Ticket[]
+  epics?: Epic[]
 }
 
-export function KanbanBoard({ filterFn }: KanbanBoardProps) {
+export function KanbanBoard({ filterFn, epics = [] }: KanbanBoardProps) {
   const searchParams = useSearchParams()
   const router = useRouter()
   const { currentWorkspace } = useWorkspace()
@@ -182,12 +183,13 @@ export function KanbanBoard({ filterFn }: KanbanBoardProps) {
               key={status}
               status={status}
               tickets={displayedTickets.filter((t) => t.status === status)}
+              epics={epics}
             />
           ))}
         </div>
 
         <DragOverlay>
-          {activeTicket && <TicketCard ticket={activeTicket} />}
+          {activeTicket && <TicketCard ticket={activeTicket} epics={epics} />}
         </DragOverlay>
       </DndContext>
 

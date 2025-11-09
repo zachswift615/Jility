@@ -98,7 +98,7 @@ export function ActivityTimeline({ changes }: ActivityTimelineProps) {
 
             <div className="flex-1 pb-4">
               <div className="text-sm">
-                <span className="font-medium">{change.changed_by}</span>
+                <span className="font-medium">{change.user_name}</span>
                 {' '}
                 <span className="text-muted-foreground">
                   {getChangeDescription(change)}

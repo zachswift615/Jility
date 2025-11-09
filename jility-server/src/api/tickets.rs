@@ -16,9 +16,9 @@ use crate::{
     state::AppState,
 };
 use jility_core::entities::{
-    ticket, ticket_assignee, ticket_label, ticket_change, comment, commit_link, ticket_dependency, project,
+    ticket, ticket_assignee, ticket_label, ticket_change, comment, commit_link, ticket_dependency, project, user,
     Ticket, TicketAssignee, TicketLabel, TicketChange, Comment, CommitLink,
-    TicketDependency, TicketStatus, ChangeType, Project,
+    TicketDependency, TicketStatus, ChangeType, Project, User,
 };
 
 /// Helper function to format ticket number with project key
@@ -49,6 +49,9 @@ pub async fn list_tickets(
     Query(query): Query<ListTicketsQuery>,
 ) -> ApiResult<Json<Vec<TicketResponse>>> {
     let mut query_builder = Ticket::find();
+
+    // Filter out soft-deleted tickets
+    query_builder = query_builder.filter(ticket::Column::DeletedAt.is_null());
 
     if let Some(project_id) = query.project_id {
         let uuid = Uuid::parse_str(&project_id)
@@ -93,17 +96,19 @@ pub async fn list_tickets(
         responses.push(TicketResponse {
             id: ticket.id.to_string(),
             number,
-            title: ticket.title,
-            description: ticket.description,
-            status: ticket.status,
+            title: ticket.title.clone(),
+            description: ticket.description.clone(),
+            status: ticket.status.clone(),
             story_points: ticket.story_points,
             assignees,
             labels,
             created_at: ticket.created_at.to_rfc3339(),
             updated_at: ticket.updated_at.to_rfc3339(),
-            created_by: ticket.created_by,
+            created_by: ticket.created_by.clone(),
             parent_id: ticket.parent_id.map(|id| id.to_string()),
             epic_id: ticket.epic_id.map(|id| id.to_string()),
+            is_epic: ticket.is_epic,
+            epic_color: ticket.epic_color.clone(),
         });
     }
 
@@ -132,6 +137,28 @@ pub async fn create_ticket(
 
     let ticket_number = max_number.unwrap_or(0) + 1;
 
+    // Validation: Prevent nesting epics (epics cannot have parent epics)
+    if payload.is_epic && payload.epic_id.is_some() {
+        return Err(ApiError::InvalidInput(
+            "Epics cannot belong to other epics (no epic nesting allowed)".to_string()
+        ));
+    }
+
+    // Validation: If epic_id is provided, verify it references an actual epic
+    if let Some(parent_epic_id) = payload.epic_id {
+        let parent = Ticket::find_by_id(parent_epic_id)
+            .one(state.db.as_ref())
+            .await
+            .map_err(ApiError::from)?
+            .ok_or_else(|| ApiError::NotFound(format!("Parent epic not found: {}", parent_epic_id)))?;
+
+        if !parent.is_epic {
+            return Err(ApiError::InvalidInput(
+                "epic_id must reference a ticket with is_epic=true".to_string()
+            ));
+        }
+    }
+
     // Start transaction
     let txn = state.db.begin().await.map_err(ApiError::from)?;
 
@@ -146,8 +173,12 @@ pub async fn create_ticket(
         story_points: Set(payload.story_points),
         epic_id: Set(payload.epic_id),
         parent_id: Set(payload.parent_id),
+        is_epic: Set(payload.is_epic),
+        epic_color: Set(payload.epic_color.clone()),
+        parent_epic_id: Set(None), // Will use epic_id for parent epic relationship
         created_at: Set(now),
         updated_at: Set(now),
+        deleted_at: Set(None), // Not deleted
         created_by: Set("system".to_string()), // TODO: Get from auth context
     };
 
@@ -246,6 +277,8 @@ pub async fn create_ticket(
         created_by: result.created_by,
         parent_id: result.parent_id.map(|id| id.to_string()),
         epic_id: result.epic_id.map(|id| id.to_string()),
+        is_epic: result.is_epic,
+        epic_color: result.epic_color.clone(),
     };
 
     // Broadcast WebSocket update
@@ -266,6 +299,7 @@ pub async fn get_ticket(
     let ticket = if let Ok(ticket_id) = Uuid::parse_str(&id) {
         // Lookup by UUID
         Ticket::find_by_id(ticket_id)
+            .filter(ticket::Column::DeletedAt.is_null())
             .one(state.db.as_ref())
             .await
             .map_err(ApiError::from)?
@@ -296,6 +330,7 @@ pub async fn get_ticket(
         Ticket::find()
             .filter(ticket::Column::ProjectId.eq(project.id))
             .filter(ticket::Column::TicketNumber.eq(ticket_number))
+            .filter(ticket::Column::DeletedAt.is_null())
             .one(state.db.as_ref())
             .await
             .map_err(ApiError::from)?
@@ -406,22 +441,55 @@ pub async fn get_ticket(
         .collect();
 
     // Get recent changes
-    let changes = TicketChange::find()
+    let ticket_changes = TicketChange::find()
         .filter(ticket_change::Column::TicketId.eq(ticket_id))
         .all(state.db.as_ref())
         .await
-        .map_err(ApiError::from)?
+        .map_err(ApiError::from)?;
+
+    // Build a set of unique user identifiers (could be email or username)
+    let user_identifiers: Vec<String> = ticket_changes
+        .iter()
+        .map(|c| c.changed_by.clone())
+        .collect();
+
+    // Fetch all users that match these identifiers
+    let users = User::find()
+        .filter(
+            user::Column::Email.is_in(user_identifiers.clone())
+                .or(user::Column::Username.is_in(user_identifiers))
+        )
+        .all(state.db.as_ref())
+        .await
+        .map_err(ApiError::from)?;
+
+    // Create a map of email/username -> username for quick lookup
+    let mut user_map = std::collections::HashMap::new();
+    for user in users {
+        user_map.insert(user.email.clone(), user.username.clone());
+        user_map.insert(user.username.clone(), user.username.clone());
+    }
+
+    // Map changes with usernames
+    let changes: Vec<ChangeEventResponse> = ticket_changes
         .into_iter()
         .take(10) // Limit to 10 most recent
-        .map(|c| ChangeEventResponse {
-            id: c.id.to_string(),
-            change_type: c.change_type,
-            field_name: c.field_name,
-            old_value: c.old_value,
-            new_value: c.new_value,
-            changed_by: c.changed_by,
-            changed_at: c.changed_at.to_rfc3339(),
-            message: c.message,
+        .map(|c| {
+            let user_name = user_map
+                .get(&c.changed_by)
+                .cloned()
+                .unwrap_or_else(|| c.changed_by.clone());
+
+            ChangeEventResponse {
+                id: c.id.to_string(),
+                change_type: c.change_type,
+                field_name: c.field_name,
+                old_value: c.old_value,
+                new_value: c.new_value,
+                user_name,
+                changed_at: c.changed_at.to_rfc3339(),
+                message: c.message,
+            }
         })
         .collect();
 
@@ -430,17 +498,19 @@ pub async fn get_ticket(
     let ticket_response = TicketResponse {
         id: ticket.id.to_string(),
         number,
-        title: ticket.title,
-        description: ticket.description,
-        status: ticket.status,
+        title: ticket.title.clone(),
+        description: ticket.description.clone(),
+        status: ticket.status.clone(),
         story_points: ticket.story_points,
         assignees,
         labels,
         created_at: ticket.created_at.to_rfc3339(),
         updated_at: ticket.updated_at.to_rfc3339(),
-        created_by: ticket.created_by,
+        created_by: ticket.created_by.clone(),
         parent_id: ticket.parent_id.map(|id| id.to_string()),
         epic_id: ticket.epic_id.map(|id| id.to_string()),
+        is_epic: ticket.is_epic,
+        epic_color: ticket.epic_color.clone(),
     };
 
     Ok(Json(TicketDetailResponse {
@@ -462,6 +532,7 @@ pub async fn update_ticket(
         .map_err(|_| ApiError::InvalidInput(format!("Invalid ticket ID: {}", id)))?;
 
     let ticket = Ticket::find_by_id(ticket_id)
+        .filter(ticket::Column::DeletedAt.is_null())
         .one(state.db.as_ref())
         .await
         .map_err(ApiError::from)?
@@ -525,6 +596,8 @@ pub async fn update_ticket(
         created_by: result.created_by,
         parent_id: result.parent_id.map(|id| id.to_string()),
         epic_id: result.epic_id.map(|id| id.to_string()),
+        is_epic: result.is_epic,
+        epic_color: result.epic_color.clone(),
     };
 
     // Broadcast update
@@ -546,6 +619,7 @@ pub async fn update_description(
         .map_err(|_| ApiError::InvalidInput(format!("Invalid ticket ID: {}", id)))?;
 
     let ticket = Ticket::find_by_id(ticket_id)
+        .filter(ticket::Column::DeletedAt.is_null())
         .one(state.db.as_ref())
         .await
         .map_err(ApiError::from)?
@@ -604,17 +678,19 @@ pub async fn update_description(
     Ok(Json(TicketResponse {
         id: result.id.to_string(),
         number,
-        title: result.title,
-        description: result.description,
-        status: result.status,
+        title: result.title.clone(),
+        description: result.description.clone(),
+        status: result.status.clone(),
         story_points: result.story_points,
         assignees,
         labels,
         created_at: result.created_at.to_rfc3339(),
         updated_at: result.updated_at.to_rfc3339(),
-        created_by: result.created_by,
+        created_by: result.created_by.clone(),
         parent_id: result.parent_id.map(|id| id.to_string()),
         epic_id: result.epic_id.map(|id| id.to_string()),
+        is_epic: result.is_epic,
+        epic_color: result.epic_color.clone(),
     }))
 }
 
@@ -631,6 +707,7 @@ pub async fn update_status(
         .map_err(|e| ApiError::InvalidInput(e.to_string()))?;
 
     let ticket = Ticket::find_by_id(ticket_id)
+        .filter(ticket::Column::DeletedAt.is_null())
         .one(state.db.as_ref())
         .await
         .map_err(ApiError::from)?
@@ -689,17 +766,19 @@ pub async fn update_status(
     let response = TicketResponse {
         id: result.id.to_string(),
         number,
-        title: result.title,
-        description: result.description,
+        title: result.title.clone(),
+        description: result.description.clone(),
         status: result.status.clone(),
         story_points: result.story_points,
         assignees,
         labels,
         created_at: result.created_at.to_rfc3339(),
         updated_at: result.updated_at.to_rfc3339(),
-        created_by: result.created_by,
+        created_by: result.created_by.clone(),
         parent_id: result.parent_id.map(|id| id.to_string()),
         epic_id: result.epic_id.map(|id| id.to_string()),
+        is_epic: result.is_epic,
+        epic_color: result.epic_color.clone(),
     };
 
     // Broadcast status change
@@ -723,6 +802,7 @@ pub async fn assign_ticket(
         .map_err(|_| ApiError::InvalidInput(format!("Invalid ticket ID: {}", id)))?;
 
     let ticket = Ticket::find_by_id(ticket_id)
+        .filter(ticket::Column::DeletedAt.is_null())
         .one(state.db.as_ref())
         .await
         .map_err(ApiError::from)?
@@ -784,17 +864,19 @@ pub async fn assign_ticket(
     Ok(Json(TicketResponse {
         id: ticket.id.to_string(),
         number,
-        title: ticket.title,
-        description: ticket.description,
-        status: ticket.status,
+        title: ticket.title.clone(),
+        description: ticket.description.clone(),
+        status: ticket.status.clone(),
         story_points: ticket.story_points,
         assignees,
         labels,
         created_at: ticket.created_at.to_rfc3339(),
         updated_at: ticket.updated_at.to_rfc3339(),
-        created_by: ticket.created_by,
+        created_by: ticket.created_by.clone(),
         parent_id: ticket.parent_id.map(|id| id.to_string()),
         epic_id: ticket.epic_id.map(|id| id.to_string()),
+        is_epic: ticket.is_epic,
+        epic_color: ticket.epic_color.clone(),
     }))
 }
 
@@ -807,6 +889,7 @@ pub async fn unassign_ticket(
         .map_err(|_| ApiError::InvalidInput(format!("Invalid ticket ID: {}", id)))?;
 
     let ticket = Ticket::find_by_id(ticket_id)
+        .filter(ticket::Column::DeletedAt.is_null())
         .one(state.db.as_ref())
         .await
         .map_err(ApiError::from)?
@@ -869,17 +952,19 @@ pub async fn unassign_ticket(
     Ok(Json(TicketResponse {
         id: ticket.id.to_string(),
         number,
-        title: ticket.title,
-        description: ticket.description,
-        status: ticket.status,
+        title: ticket.title.clone(),
+        description: ticket.description.clone(),
+        status: ticket.status.clone(),
         story_points: ticket.story_points,
         assignees,
         labels,
         created_at: ticket.created_at.to_rfc3339(),
         updated_at: ticket.updated_at.to_rfc3339(),
-        created_by: ticket.created_by,
+        created_by: ticket.created_by.clone(),
         parent_id: ticket.parent_id.map(|id| id.to_string()),
         epic_id: ticket.epic_id.map(|id| id.to_string()),
+        is_epic: ticket.is_epic,
+        epic_color: ticket.epic_color.clone(),
     }))
 }
 
@@ -890,8 +975,37 @@ pub async fn delete_ticket(
     let ticket_id = Uuid::parse_str(&id)
         .map_err(|_| ApiError::InvalidInput(format!("Invalid ticket ID: {}", id)))?;
 
-    Ticket::delete_by_id(ticket_id)
-        .exec(state.db.as_ref())
+    let ticket = Ticket::find_by_id(ticket_id)
+        .one(state.db.as_ref())
+        .await
+        .map_err(ApiError::from)?
+        .ok_or_else(|| ApiError::NotFound(format!("Ticket not found: {}", id)))?;
+
+    // Soft delete: set deleted_at timestamp
+    let mut ticket: ticket::ActiveModel = ticket.into();
+    let now = Utc::now();
+    ticket.deleted_at = Set(Some(now));
+    ticket.updated_at = Set(now);
+
+    ticket
+        .update(state.db.as_ref())
+        .await
+        .map_err(ApiError::from)?;
+
+    // Record deletion in ticket_changes
+    let change = ticket_change::ActiveModel {
+        id: Set(Uuid::new_v4()),
+        ticket_id: Set(ticket_id),
+        change_type: Set(ChangeType::Deleted.as_str().to_string()),
+        field_name: Set(None),
+        old_value: Set(None),
+        new_value: Set(None),
+        changed_by: Set("system".to_string()),
+        changed_at: Set(now),
+        message: Set(Some("Ticket soft deleted".to_string())),
+    };
+    change
+        .insert(state.db.as_ref())
         .await
         .map_err(ApiError::from)?;
 

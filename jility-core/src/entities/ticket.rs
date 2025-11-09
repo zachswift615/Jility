@@ -33,11 +33,28 @@ pub struct Model {
     #[sea_orm(nullable)]
     pub parent_id: Option<Uuid>,
 
+    /// Whether this ticket is an epic (large feature container)
+    #[serde(default)]
+    pub is_epic: bool,
+
+    /// Optional color for epic visualization (hex color code)
+    #[sea_orm(nullable)]
+    pub epic_color: Option<String>,
+
+    /// Reference to parent epic (for tickets belonging to an epic)
+    /// Note: This serves the same purpose as epic_id but was added by migration
+    #[sea_orm(nullable)]
+    pub parent_epic_id: Option<Uuid>,
+
     pub created_at: DateTimeUtc,
     pub updated_at: DateTimeUtc,
 
     /// Who created this ticket ("agent-1", "alice", etc.)
     pub created_by: String,
+
+    /// Soft delete timestamp - if set, ticket is considered deleted
+    #[sea_orm(nullable)]
+    pub deleted_at: Option<DateTimeUtc>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

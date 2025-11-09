@@ -41,6 +41,9 @@ pub struct CreateTicketRequest {
     pub labels: Option<Vec<String>>,
     pub parent_id: Option<Uuid>,
     pub epic_id: Option<Uuid>,
+    #[serde(default)]
+    pub is_epic: bool,
+    pub epic_color: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]

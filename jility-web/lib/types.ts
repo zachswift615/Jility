@@ -55,7 +55,7 @@ export interface TicketChange {
   field_name?: string
   old_value?: string
   new_value?: string
-  changed_by: string
+  user_name: string
   changed_at: string
   message?: string
 }
@@ -95,6 +95,7 @@ export interface UpdateProjectRequest {
 }
 
 export interface CreateTicketRequest {
+  project_id: string
   title: string
   description: string
   story_points?: number
@@ -313,4 +314,25 @@ export interface WorkspaceSettings {
 
 export interface WorkspaceWithSettings extends WorkspaceResponse {
   settings: WorkspaceSettings
+}
+
+export interface EpicProgress {
+  total: number
+  done: number
+  in_progress: number
+  todo: number
+  blocked: number
+  completion_percentage: number
+}
+
+export interface Epic {
+  id: string
+  number: string
+  title: string
+  description: string
+  is_epic: boolean
+  epic_color?: string
+  progress: EpicProgress
+  created_at: string
+  updated_at: string
 }

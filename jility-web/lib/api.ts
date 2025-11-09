@@ -26,6 +26,7 @@ import type {
   SprintStats,
   BurndownData,
   SprintHistory,
+  Epic,
 } from './types'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3900/api'
@@ -195,6 +196,7 @@ export const api = {
   deleteTicket: async (id: string): Promise<{ success: boolean }> => {
     const res = await fetch(`${API_BASE}/tickets/${id}`, {
       method: 'DELETE',
+      headers: getAuthHeaders(),
     })
     return handleResponse<{ success: boolean }>(res)
   },
@@ -635,5 +637,30 @@ export const api = {
       headers: getAuthHeaders(),
     })
     return handleResponse<SprintHistory>(res)
+  },
+
+  // Epics
+  listEpics: async (projectId?: string): Promise<Epic[]> => {
+    const params = new URLSearchParams()
+    if (projectId) params.append('project_id', projectId)
+    const url = params.toString() ? `${API_BASE}/epics?${params}` : `${API_BASE}/epics`
+    const res = await fetch(url, {
+      headers: getAuthHeaders(),
+    })
+    return handleResponse<Epic[]>(res)
+  },
+
+  getEpic: async (id: string): Promise<Epic> => {
+    const res = await fetch(`${API_BASE}/epics/${id}`, {
+      headers: getAuthHeaders(),
+    })
+    return handleResponse<Epic>(res)
+  },
+
+  getEpicTickets: async (id: string): Promise<Ticket[]> => {
+    const res = await fetch(`${API_BASE}/epics/${id}/tickets`, {
+      headers: getAuthHeaders(),
+    })
+    return handleResponse<Ticket[]>(res)
   },
 }

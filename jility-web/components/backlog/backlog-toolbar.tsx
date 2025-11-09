@@ -8,6 +8,7 @@ interface BacklogToolbarProps {
   totalPoints: number
   filter: string
   onFilterChange: (filter: string) => void
+  onQuickAdd?: () => void
 }
 
 export function BacklogToolbar({
@@ -15,11 +16,12 @@ export function BacklogToolbar({
   totalPoints,
   filter,
   onFilterChange,
+  onQuickAdd,
 }: BacklogToolbarProps) {
   return (
     <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:items-center sm:justify-between mb-5 p-4 bg-muted border border-border rounded-lg">
       <div className="flex flex-wrap items-center gap-3">
-        <Button variant="outline" size="sm" className="gap-2">
+        <Button variant="outline" size="sm" className="gap-2" onClick={onQuickAdd}>
           <Zap className="h-4 w-4" />
           Quick Add
         </Button>

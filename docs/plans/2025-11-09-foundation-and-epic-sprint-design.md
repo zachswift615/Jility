@@ -7,6 +7,87 @@
 
 ---
 
+## ✅ SPRINT COMPLETED - November 2025
+
+**Completion Date:** November 9, 2025
+**Total Commits:** 20 commits
+**Status:** All planned features delivered and tested
+
+### Summary of Delivered Features
+
+**Slice 1: Foundation Cleanup ✅**
+- MCP `get_comments` tool for reading ticket comment threads
+- Soft delete functionality (database, API, MCP, UI)
+- Fixed activity attribution to display usernames instead of "system"
+- Removed unused Agents tab from navigation
+
+**Slice 2: Epic Support - Backend ✅**
+- Database schema: Added `is_epic`, `epic_color`, `parent_epic_id` columns to tickets table
+- Epic API endpoints: `GET /api/epics`, `GET /api/epics/:id`, `GET /api/epics/:id/tickets`
+- Epic progress calculation (total/done/in_progress/todo/blocked counts, completion percentage)
+- MCP tools: `create_epic`, `list_epics`
+- Updated MCP tools to support epic filtering
+
+**Slice 3: Epic Support - Frontend ✅**
+- Epic board view (`/epics`) with card-based grid layout
+- Epic detail page with progress visualization and filtered kanban board
+- Epic color badges on ticket cards
+- Epic filtering on main board view
+- "Epics" tab added to main navigation
+- Create epic functionality with color picker
+
+**Slice 4: UI/UX Polish ✅**
+- Consolidated settings into single `/settings` page with tabs (Profile, Workspace, Projects, API Keys)
+- Removed duplicate `/project` route (redirects to `/settings?tab=projects`)
+- Fixed Quick Add in backlog view - now creates tickets successfully
+- Fixed Quick Add button at top of backlog - opens working inline form
+
+### Integration Testing Results
+All features tested end-to-end:
+- ✅ Epic creation (UI, MCP, API)
+- ✅ Ticket assignment to epics
+- ✅ Epic progress calculation accuracy
+- ✅ Epic filtering on board
+- ✅ Soft delete functionality
+- ✅ Comment retrieval via MCP
+- ✅ Settings consolidation
+- ✅ Quick Add functionality in backlog
+
+### Known Issues
+None - all discovered issues were fixed during implementation.
+
+### Commit Log
+```
+f428730 fix: Quick Add button at top of backlog opens working form
+d31b6f7 fix: Quick Add in backlog view creates tickets successfully
+4b3488c feat: unify settings pages with tabbed interface
+423e056 feat: add epic filtering to board view
+858f8de feat: add epic detail page with progress visualization and kanban board
+af33611 feat: add epic-card component and epics list page
+31733e7 feat: add epic management MCP tools
+dd55916 feat(backend): Add epic support API endpoints and validation
+fdda784 feat: add database schema support for epics
+7ad8a6e feat: remove unused Agents page and navigation link
+1b8905c fix: display usernames instead of user IDs in activity log
+16002f0 fix(api): add auth headers to deleteTicket endpoint
+c288ec4 feat: add delete button with confirmation to ticket detail view
+461158f feat: add delete_ticket MCP tool for soft-deleting tickets
+7355f76 fix(core): add ChangeType::Deleted enum variant
+1b7fbc5 feat(JIL-28): Add soft delete for tickets
+5861adc fix(api): support ticket numbers in list_comments endpoint
+d880882 feat(mcp): add get_comments tool for reading ticket comments
+0530f0b chore: remove unused jility-cli crate
+758404e Add Foundation & Epic Sprint design document
+```
+
+### Documentation Updated
+- ✅ `.claude/CLAUDE.md` - Added new MCP tools documentation
+- ✅ `README.md` - Updated roadmap and key features
+- ✅ `docs/api/API.md` - Added epic endpoints documentation
+- ✅ `docs/EPIC_SUPPORT.md` - Created comprehensive epic feature guide
+
+---
+
 ## Executive Summary
 
 This sprint focuses on **foundation and polish** rather than AI magic features. The goal is to prove the solo dev UX by making Jility rock-solid, organized with epics, and fixing UI paper cuts.

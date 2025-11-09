@@ -2,7 +2,7 @@
 
 import { useDroppable } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
-import type { Ticket, TicketStatus } from '@/lib/types'
+import type { Ticket, TicketStatus, Epic } from '@/lib/types'
 import { TicketCard } from './ticket-card'
 import { getStatusLabel, cn } from '@/lib/utils'
 import { Plus } from 'lucide-react'
@@ -10,10 +10,11 @@ import { Plus } from 'lucide-react'
 interface ColumnProps {
   status: TicketStatus
   tickets: Ticket[]
+  epics?: Epic[]
   onCreateTicket?: (status: TicketStatus) => void
 }
 
-export function Column({ status, tickets, onCreateTicket }: ColumnProps) {
+export function Column({ status, tickets, epics = [], onCreateTicket }: ColumnProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: status,
   })
@@ -52,7 +53,7 @@ export function Column({ status, tickets, onCreateTicket }: ColumnProps) {
         <SortableContext items={ticketIds} strategy={verticalListSortingStrategy}>
           <div className="space-y-2">
             {tickets.map((ticket) => (
-              <TicketCard key={ticket.id} ticket={ticket} />
+              <TicketCard key={ticket.id} ticket={ticket} epics={epics} />
             ))}
           </div>
         </SortableContext>

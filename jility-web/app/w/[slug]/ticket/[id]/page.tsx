@@ -12,8 +12,19 @@ import { AssigneeSelector } from '@/components/ticket/assignee-selector'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
 import { useWebSocket } from '@/lib/websocket'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Trash2 } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 
 export default function TicketPage() {
   const params = useParams()
@@ -192,6 +203,25 @@ export default function TicketPage() {
     }
   }
 
+  const handleDelete = async () => {
+    try {
+      await api.deleteTicket(ticketId)
+      toast({
+        title: 'Ticket deleted',
+        description: 'The ticket has been deleted successfully.',
+      })
+      // Navigate back to board or backlog
+      router.push(`/w/${slug}/board`)
+    } catch (error) {
+      console.error('Failed to delete ticket:', error)
+      toast({
+        title: 'Failed to delete ticket',
+        description: 'Please try again',
+        variant: 'destructive',
+      })
+    }
+  }
+
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -252,6 +282,32 @@ export default function TicketPage() {
         </div>
 
         <div className="space-y-8">
+          {/* Delete ticket button */}
+          <div className="border-b border-border pb-4">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="sm" className="w-full">
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete Ticket
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will permanently delete ticket {ticketDetails.ticket.number}. This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+
           <ActivityTimeline changes={ticketDetails.recent_changes} />
 
           {ticketDetails.linked_commits.length > 0 && (

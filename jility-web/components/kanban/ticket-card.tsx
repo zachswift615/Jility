@@ -1,21 +1,23 @@
 'use client'
 
-import { useRouter, useParams } from 'next/navigation'
+import { useRouter, useParams, useSearchParams } from 'next/navigation'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { GripVertical, MessageSquare, GitCommit, Users } from 'lucide-react'
-import type { Ticket } from '@/lib/types'
+import { GripVertical, MessageSquare, GitCommit, Users, Layers } from 'lucide-react'
+import type { Ticket, Epic } from '@/lib/types'
 import { Badge } from '@/components/ui/badge'
 import { AssigneeAvatars } from '@/components/ticket/assignee-avatars'
 import { cn } from '@/lib/utils'
 
 interface TicketCardProps {
   ticket: Ticket
+  epics?: Epic[]
 }
 
-export function TicketCard({ ticket }: TicketCardProps) {
+export function TicketCard({ ticket, epics = [] }: TicketCardProps) {
   const router = useRouter()
   const params = useParams()
+  const searchParams = useSearchParams()
   const slug = params.slug as string
   const {
     attributes,
@@ -39,6 +41,16 @@ export function TicketCard({ ticket }: TicketCardProps) {
     }
     router.push(`/w/${slug}/ticket/${ticket.id}`)
   }
+
+  const handleEpicClick = (e: React.MouseEvent, epicId: string) => {
+    e.stopPropagation() // Prevent card navigation
+    const params = new URLSearchParams(searchParams.toString())
+    params.set('epic', epicId)
+    router.push(`/w/${slug}/board?${params.toString()}`)
+  }
+
+  // Find epic for this ticket
+  const ticketEpic = ticket.epic_id ? epics.find(e => e.id === ticket.epic_id) : null
 
   return (
     <div
@@ -69,6 +81,20 @@ export function TicketCard({ ticket }: TicketCardProps) {
       <h3 className="text-sm font-medium mb-3 line-clamp-2">
         {ticket.title}
       </h3>
+
+      {ticketEpic && (
+        <div className="mb-2">
+          <Badge
+            variant="outline"
+            className="text-xs cursor-pointer hover:bg-accent"
+            style={{ borderColor: ticketEpic.epic_color || undefined }}
+            onClick={(e) => handleEpicClick(e, ticketEpic.id)}
+          >
+            <Layers className="h-3 w-3 mr-1" />
+            {ticketEpic.title}
+          </Badge>
+        </div>
+      )}
 
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
