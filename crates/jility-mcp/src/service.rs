@@ -250,6 +250,9 @@ impl JilityService {
         let mut url = format!("{}/tickets", self.api_base_url);
         let mut query_params = Vec::new();
 
+        // Always filter by the configured project ID
+        query_params.push(format!("project_id={}", self.project_id));
+
         if let Some(status) = &status {
             for s in status {
                 query_params.push(format!("status={}", s));

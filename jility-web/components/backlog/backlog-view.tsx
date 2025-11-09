@@ -15,6 +15,7 @@ import type { Ticket, WorkspaceMember } from '@/lib/types'
 import { api } from '@/lib/api'
 import { useAuth } from '@/lib/auth-context'
 import { useWorkspace } from '@/lib/workspace-context'
+import { useProject } from '@/lib/project-context'
 import { AssigneeFilter } from '@/components/ticket/assignee-filter'
 import { BacklogToolbar } from './backlog-toolbar'
 import { BacklogSection } from './backlog-section'
@@ -44,6 +45,7 @@ function BacklogContent() {
   })
   const { user } = useAuth()
   const { currentWorkspace } = useWorkspace()
+  const { currentProject } = useProject()
   const slug = currentWorkspace?.slug || ''
   const searchParams = useSearchParams()
 
@@ -56,15 +58,21 @@ function BacklogContent() {
   )
 
   const loadTickets = useCallback(async () => {
+    if (!currentProject) return
+
     try {
-      const data = await api.listTickets({ status: 'backlog' })
+      // Fetch tickets filtered by current project and backlog status
+      const data = await api.listTickets({
+        project_id: currentProject.id,
+        status: 'backlog',
+      })
       setTickets(data)
     } catch (error) {
       console.error('Failed to load backlog tickets:', error)
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [currentProject])
 
   const loadMembers = useCallback(async () => {
     if (!slug) return

@@ -39,7 +39,7 @@ async fn format_ticket_number(
 #[derive(Debug, Deserialize)]
 pub struct ListTicketsQuery {
     pub project_id: Option<String>,
-    pub status: Option<String>,
+    pub status: Option<Vec<String>>,
     pub assignee: Option<String>,
 }
 
@@ -55,8 +55,10 @@ pub async fn list_tickets(
         query_builder = query_builder.filter(ticket::Column::ProjectId.eq(uuid));
     }
 
-    if let Some(status) = query.status {
-        query_builder = query_builder.filter(ticket::Column::Status.eq(status));
+    if let Some(statuses) = query.status {
+        if !statuses.is_empty() {
+            query_builder = query_builder.filter(ticket::Column::Status.is_in(statuses));
+        }
     }
 
     let tickets = query_builder

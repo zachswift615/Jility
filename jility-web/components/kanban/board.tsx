@@ -15,6 +15,7 @@ import type { Ticket, TicketStatus, WebSocketMessage } from '@/lib/types'
 import { api } from '@/lib/api'
 import { useWebSocket } from '@/lib/websocket'
 import { useWorkspace } from '@/lib/workspace-context'
+import { useProject } from '@/lib/project-context'
 import { Column } from './column'
 import { TicketCard } from './ticket-card'
 import { CreateTicketDialog } from '../ticket/create-ticket-dialog'
@@ -29,6 +30,7 @@ export function KanbanBoard({ filterFn }: KanbanBoardProps) {
   const searchParams = useSearchParams()
   const router = useRouter()
   const { currentWorkspace } = useWorkspace()
+  const { currentProject } = useProject()
   const slug = currentWorkspace?.slug || ''
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [activeTicket, setActiveTicket] = useState<Ticket | null>(null)
@@ -51,15 +53,18 @@ export function KanbanBoard({ filterFn }: KanbanBoardProps) {
   )
 
   const loadTickets = useCallback(async () => {
+    if (!currentProject) return
+
     try {
-      const data = await api.listTickets()
+      // Fetch tickets filtered by current project
+      const data = await api.listTickets({ project_id: currentProject.id })
       setTickets(data)
     } catch (error) {
       console.error('Failed to load tickets:', error)
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [currentProject])
 
   useEffect(() => {
     loadTickets()
