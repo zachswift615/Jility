@@ -75,13 +75,14 @@ GET /api/projects/:id
 ### List Tickets
 
 ```
-GET /api/tickets?project_id={uuid}&status={status}&assignee={name}
+GET /api/tickets?project_id={uuid}&status={status}&assignee={name}&epic_id={uuid}
 ```
 
 **Query Parameters:**
 - `project_id` (optional): Filter by project UUID
 - `status` (optional): Filter by status (backlog, todo, in_progress, review, done, blocked)
 - `assignee` (optional): Filter by assignee name
+- `epic_id` (optional): Filter by epic UUID (shows only tickets belonging to this epic)
 
 **Response:**
 ```json
@@ -118,9 +119,16 @@ Content-Type: application/json
   "assignees": ["alice", "agent-1"],
   "labels": ["backend", "feature"],
   "parent_id": null,
-  "epic_id": null
+  "parent_epic_id": null,
+  "is_epic": false,
+  "epic_color": null
 }
 ```
+
+**Epic Fields:**
+- `is_epic` (boolean): Set to `true` to create an epic instead of a regular ticket
+- `epic_color` (string): Hex color code for epic badge (e.g., "#3b82f6"). Optional, defaults to theme primary.
+- `parent_epic_id` (uuid): ID of the epic this ticket belongs to. Cannot be set if `is_epic` is true.
 
 **Response:** Same format as ticket in list response.
 
@@ -265,10 +273,96 @@ Content-Type: application/json
 DELETE /api/tickets/:id
 ```
 
+**Soft Delete:** Marks the ticket as deleted (`deleted_at` timestamp set) but preserves it in the database for audit trail. Deleted tickets are filtered out of list and board views.
+
 **Response:**
 ```json
 {
   "success": true
+}
+```
+
+---
+
+## Epics
+
+### List Epics
+
+```
+GET /api/epics
+```
+
+Returns all epics with progress statistics.
+
+**Response:**
+```json
+[
+  {
+    "id": "uuid",
+    "number": "JIL-42",
+    "title": "User Authentication",
+    "description": "Complete auth system",
+    "is_epic": true,
+    "epic_color": "#3b82f6",
+    "progress": {
+      "total": 10,
+      "done": 3,
+      "in_progress": 2,
+      "todo": 5,
+      "blocked": 0,
+      "completion_percentage": 30
+    },
+    "created_at": "2024-01-01T00:00:00Z",
+    "updated_at": "2024-01-01T00:00:00Z"
+  }
+]
+```
+
+### Get Epic Details
+
+```
+GET /api/epics/:id
+```
+
+Returns epic details with progress tracking.
+
+**Response:** Same format as epic in list response.
+
+### Get Epic Tickets
+
+```
+GET /api/epics/:id/tickets
+```
+
+Returns all tickets belonging to an epic with status breakdown.
+
+**Response:**
+```json
+{
+  "epic": {
+    "id": "uuid",
+    "number": "JIL-42",
+    "title": "User Authentication",
+    ...
+  },
+  "tickets": [
+    {
+      "id": "uuid",
+      "number": "JIL-43",
+      "title": "Build login UI",
+      "status": "in_progress",
+      "parent_epic_id": "uuid",
+      ...
+    }
+  ],
+  "progress": {
+    "total": 10,
+    "done": 3,
+    "in_progress": 2,
+    "todo": 5,
+    "blocked": 0,
+    "completion_percentage": 30
+  }
 }
 ```
 

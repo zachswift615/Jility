@@ -34,8 +34,8 @@ Jility combines:
 - **Activity transparency** - See who (human or agent) did what, when
 
 ### Intelligent Workflows
-- **Agent planning** - AI agents can break down epics into tickets
-- **Context bundling** - Agents get full ticket history, dependencies, and guidance
+- **Epic support** - Organize tickets into epics with JIRA-like hierarchy and progress tracking
+- **Context bundling** - Agents get full ticket history, comments, dependencies, and guidance
 - **Smart decomposition** - Agents can split complex tickets into sub-tasks
 - **Template system** - Quick ticket creation for common patterns
 - **Dependency tracking** - Automatic detection and management
@@ -282,31 +282,46 @@ jility ticket comment TASK-10 "Looks good! Let's add error handling"
 
 ## Roadmap
 
-### Phase 1: MVP Core (2-3 weeks)
+### Phase 1: MVP Core ✅ Complete
 - ✅ CLI with ticket CRUD
 - ✅ SQLite storage with migrations
 - ✅ Description versioning and precise editing
 - ✅ Basic local workflow
 
-### Phase 2: MCP Server (2 weeks)
+### Phase 2: MCP Server ✅ Complete
 - ✅ Full MCP protocol implementation
 - ✅ Agent ticket creation and management
 - ✅ Context bundling for LLMs
 - ✅ Template system
 
-### Phase 3: Web UI (3 weeks)
+### Phase 3: Web UI ✅ Complete
 - ✅ Beautiful Kanban board
 - ✅ Ticket detail view with markdown
 - ✅ Real-time updates via WebSocket
 - ✅ Command palette (⌘K)
 - ✅ Agent activity dashboard
 
-### Phase 4: Polish & Cloud (2-3 weeks)
+### Phase 4: Polish & Cloud ✅ Complete
 - ✅ Advanced search and filtering
 - ✅ Sprint management
 - ✅ Git integration
 - ✅ PostgreSQL support
 - ✅ Optional cloud deployment
+
+### Foundation & Epic Sprint ✅ Complete (November 2025)
+- ✅ Foundation cleanup (MCP comments, soft delete, attribution fixes)
+- ✅ Epic support with JIRA-like hierarchy
+- ✅ Epic progress tracking and visualization
+- ✅ Epic filtering on boards
+- ✅ Color-coded epic badges
+- ✅ Consolidated settings UI
+- ✅ UI polish (Quick Add fixes, navigation cleanup)
+
+### Current Phase: Production Ready
+Jility is feature-complete for solo developer workflows with AI assistants. Focus is now on:
+- Performance optimization
+- Mobile experience improvements
+- Team collaboration features (future)
 
 ---
 
