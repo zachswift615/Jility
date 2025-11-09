@@ -149,8 +149,12 @@ pub async fn create_ticket(
         story_points: Set(payload.story_points),
         epic_id: Set(payload.epic_id),
         parent_id: Set(payload.parent_id),
+        is_epic: Set(false), // Default to false, will be configurable in UI later
+        epic_color: Set(None), // No color by default
+        parent_epic_id: Set(None), // No parent epic by default
         created_at: Set(now),
         updated_at: Set(now),
+        deleted_at: Set(None), // Not deleted
         created_by: Set("system".to_string()), // TODO: Get from auth context
     };
 

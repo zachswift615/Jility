@@ -8,7 +8,7 @@ use crate::{
     models::{AddDependencyRequest, DependencyGraphResponse, TicketReference},
     state::AppState,
 };
-use jility_core::entities::{ticket_dependency, Ticket, TicketDependency};
+use jility_core::entities::{ticket, ticket_dependency, Ticket, TicketDependency};
 
 pub async fn add_dependency(
     State(state): State<AppState>,
