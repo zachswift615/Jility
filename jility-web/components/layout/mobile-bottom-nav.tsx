@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Layers, ListTodo, Boxes, Settings } from 'lucide-react'
+import { Layers, ListTodo, Settings } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useWorkspace } from '@/lib/workspace-context'
 
@@ -14,7 +14,6 @@ export function MobileBottomNav() {
   const navItems = [
     { href: `/w/${slug}/board`, label: 'Board', icon: Layers },
     { href: `/w/${slug}/backlog`, label: 'Backlog', icon: ListTodo },
-    { href: `/w/${slug}/agents`, label: 'Agents', icon: Boxes },
     { href: `/w/${slug}/profile`, label: 'Settings', icon: Settings },
   ]
 
