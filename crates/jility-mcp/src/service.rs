@@ -705,6 +705,31 @@ impl JilityService {
 
         Ok(output)
     }
+
+    /// Delete a ticket (soft delete)
+    #[tool(
+        description = "Delete a ticket by marking it as deleted (soft delete). The ticket will no longer appear in lists or boards, but is preserved in the database for audit trail."
+    )]
+    pub async fn delete_ticket(
+        &self,
+        #[tool(param)] ticket_id: String,
+    ) -> Result<String, String> {
+
+        let response = self.build_request(
+            reqwest::Method::DELETE,
+            format!("{}/tickets/{}", self.api_base_url, ticket_id)
+        )
+            .send()
+            .await
+            .map_err(|e| format!("Failed to delete ticket: {}", e))?;
+
+        if !response.status().is_success() {
+            let error_text = response.text().await.unwrap_or_else(|_| "Unknown error".to_string());
+            return Err(format!("Failed to delete ticket: {}", error_text));
+        }
+
+        Ok(format!("✅ Deleted ticket {}", ticket_id))
+    }
 }
 
 // Use the tool_box! macro to generate list_tools and call_tool implementations
@@ -726,6 +751,7 @@ tool_box!(JilityService {
     list_templates,
     create_from_template,
     search_tickets,
+    delete_ticket,
 });
 
 impl ServerHandler for JilityService {
