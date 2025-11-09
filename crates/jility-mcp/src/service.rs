@@ -72,7 +72,7 @@ impl JilityService {
         #[tool(param)] assignees: Option<Vec<String>>,
         #[tool(param)] labels: Option<Vec<String>>,
         #[tool(param)] parent_id: Option<String>,
-        #[tool(param)] epic_id: Option<String>,
+        #[tool(param)] parent_epic_id: Option<String>,
     ) -> Result<String, String> {
 
         let response = self.build_request(
@@ -88,7 +88,7 @@ impl JilityService {
                 "assignees": assignees.unwrap_or_default(),
                 "labels": labels.unwrap_or_default(),
                 "parent_id": parent_id,
-                "epic_id": epic_id,
+                "parent_epic_id": parent_epic_id,
             }))
             .send()
             .await
@@ -151,7 +151,7 @@ impl JilityService {
                     "assignees": ticket_params.assignees.unwrap_or_default(),
                     "labels": ticket_params.labels.unwrap_or_default(),
                     "parent_id": params.parent_id.clone(),
-                    "epic_id": ticket_params.epic_id,
+                    "parent_epic_id": ticket_params.parent_epic_id,
                 }))
                 .send()
                 .await
@@ -242,7 +242,7 @@ impl JilityService {
         #[tool(param)] assignee: Option<String>,
         #[tool(param)] labels: Option<Vec<String>>,
         #[tool(param)] parent_id: Option<String>,
-        #[tool(param)] epic_id: Option<String>,
+        #[tool(param)] parent_epic_id: Option<String>,
         #[tool(param)] unassigned: Option<bool>,
         #[tool(param)] limit: Option<u64>,
     ) -> Result<String, String> {
@@ -730,6 +730,113 @@ impl JilityService {
 
         Ok(format!("✅ Deleted ticket {}", ticket_id))
     }
+
+    /// Create an epic
+    #[tool(
+        description = "Create a new epic to organize related tickets. Epics are high-level containers for grouping work. Returns the created epic ID and number."
+    )]
+    pub async fn create_epic(
+        &self,
+        #[tool(param)] title: String,
+        #[tool(param)] description: Option<String>,
+        #[tool(param)] epic_color: Option<String>,
+    ) -> Result<String, String> {
+
+        let response = self.build_request(
+            reqwest::Method::POST,
+            format!("{}/tickets", self.api_base_url)
+        )
+            .json(&json!({
+                "project_id": self.project_id,
+                "title": title,
+                "description": description.unwrap_or_default(),
+                "is_epic": true,
+                "epic_color": epic_color,
+                "status": "backlog",
+            }))
+            .send()
+            .await
+            .map_err(|e| format!("Failed to create epic: {}", e))?;
+
+        if !response.status().is_success() {
+            let error_text = response.text().await.unwrap_or_else(|_| "Unknown error".to_string());
+            return Err(format!("API error: {}", error_text));
+        }
+
+        let epic: serde_json::Value = response.json().await
+            .map_err(|e| format!("Failed to parse response: {}", e))?;
+
+        let epic_number = epic["number"].as_str().unwrap_or("UNKNOWN");
+        let title = epic["title"].as_str().unwrap_or("");
+        let epic_color = epic["epic_color"].as_str().unwrap_or("none");
+
+        Ok(format!(
+            "✅ Created epic {}\n\n\
+             **Title:** {}\n\
+             **Color:** {}\n\n\
+             View: `jility ticket show {}`",
+            epic_number, title, epic_color, epic_number
+        ))
+    }
+
+    /// List all epics with progress
+    #[tool(
+        description = "List all epics with progress statistics. Shows total tickets, completion status, and progress percentage for each epic."
+    )]
+    pub async fn list_epics(
+        &self,
+        #[tool(param)] limit: Option<u64>,
+    ) -> Result<String, String> {
+
+        let mut url = format!("{}/epics", self.api_base_url);
+        url.push_str(&format!("?project_id={}", self.project_id));
+
+        let response = self.build_request(
+            reqwest::Method::GET,
+            url.clone()
+        )
+            .send()
+            .await
+            .map_err(|e| format!("Failed to list epics: {}", e))?;
+
+        if !response.status().is_success() {
+            let status = response.status();
+            let error_body = response.text().await.unwrap_or_else(|_| "Unable to read error".to_string());
+            return Err(format!("Failed to list epics (HTTP {}): {} | URL: {}", status, error_body, url));
+        }
+
+        let epics: Vec<serde_json::Value> = response.json().await
+            .map_err(|e| format!("Failed to parse response: {}", e))?;
+
+        if epics.is_empty() {
+            return Ok("📋 No epics found".to_string());
+        }
+
+        let mut output = format!("📋 Found {} epics\n\n", epics.len());
+
+        for epic in epics.iter().take(limit.unwrap_or(50) as usize) {
+            let number = epic["number"].as_str().unwrap_or("?");
+            let title = epic["title"].as_str().unwrap_or("?");
+            let color = epic["epic_color"].as_str().unwrap_or("default");
+
+            // Parse progress if available
+            let progress_str = if let Some(progress) = epic.get("progress") {
+                let total = progress["total"].as_i64().unwrap_or(0);
+                let done = progress["done"].as_i64().unwrap_or(0);
+                let completion = progress["completion_percentage"].as_i64().unwrap_or(0);
+                format!("{}/{} tasks ({}% complete)", done, total, completion)
+            } else {
+                "No progress data".to_string()
+            };
+
+            output.push_str(&format!(
+                "- {} [{}]: {} - {}\n",
+                number, color, title, progress_str
+            ));
+        }
+
+        Ok(output)
+    }
 }
 
 // Use the tool_box! macro to generate list_tools and call_tool implementations
@@ -752,6 +859,8 @@ tool_box!(JilityService {
     create_from_template,
     search_tickets,
     delete_ticket,
+    create_epic,
+    list_epics,
 });
 
 impl ServerHandler for JilityService {

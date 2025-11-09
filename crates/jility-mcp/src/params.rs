@@ -19,7 +19,7 @@ pub struct CreateTicketParams {
     #[serde(default)]
     pub parent_id: Option<String>,
     #[serde(default)]
-    pub epic_id: Option<String>,
+    pub parent_epic_id: Option<String>,
 }
 
 /// Parameters for creating multiple tickets at once
@@ -48,7 +48,7 @@ pub struct ListTicketsParams {
     #[serde(default)]
     pub parent_id: Option<String>,
     #[serde(default)]
-    pub epic_id: Option<String>,
+    pub parent_epic_id: Option<String>,
     #[serde(default)]
     pub unassigned: Option<bool>,
     #[serde(default = "default_limit")]
