@@ -61,12 +61,15 @@ function BacklogContent() {
     if (!currentProject) return
 
     try {
-      // Fetch tickets filtered by current project and backlog status
+      // Fetch all tickets for current project (backlog shows all non-done work)
       const data = await api.listTickets({
         project_id: currentProject.id,
-        status: 'backlog',
       })
-      setTickets(data)
+      // Filter to only show backlog tickets (exclude in_progress, review, done)
+      const backlogTickets = data.filter(t =>
+        t.status === 'backlog' || t.status === 'todo' || t.status === 'blocked'
+      )
+      setTickets(backlogTickets)
     } catch (error) {
       console.error('Failed to load backlog tickets:', error)
     } finally {
