@@ -148,6 +148,7 @@ pub async fn get_sprint(
     } else {
         Ticket::find()
             .filter(ticket::Column::Id.is_in(ticket_ids))
+            .filter(ticket::Column::DeletedAt.is_null())
             .all(state.db.as_ref())
             .await
             .map_err(ApiError::from)?
@@ -433,6 +434,7 @@ pub async fn add_ticket_to_sprint(
 
     // Verify ticket exists
     Ticket::find_by_id(ticket_uuid)
+        .filter(ticket::Column::DeletedAt.is_null())
         .one(state.db.as_ref())
         .await
         .map_err(ApiError::from)?
@@ -541,6 +543,7 @@ pub async fn get_sprint_stats(
     } else {
         Ticket::find()
             .filter(ticket::Column::Id.is_in(ticket_ids))
+            .filter(ticket::Column::DeletedAt.is_null())
             .all(state.db.as_ref())
             .await
             .map_err(ApiError::from)?
@@ -634,6 +637,7 @@ pub async fn get_burndown(
     } else {
         Ticket::find()
             .filter(ticket::Column::Id.is_in(ticket_ids))
+            .filter(ticket::Column::DeletedAt.is_null())
             .all(state.db.as_ref())
             .await
             .map_err(ApiError::from)?

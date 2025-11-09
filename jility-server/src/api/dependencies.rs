@@ -68,6 +68,7 @@ pub async fn get_dependency_graph(
         .map_err(|_| ApiError::InvalidInput(format!("Invalid ticket ID: {}", id)))?;
 
     let ticket = Ticket::find_by_id(ticket_id)
+        .filter(ticket::Column::DeletedAt.is_null())
         .one(state.db.as_ref())
         .await
         .map_err(ApiError::from)?
@@ -83,6 +84,7 @@ pub async fn get_dependency_graph(
     let mut dependency_refs = Vec::new();
     for dep in dependencies {
         if let Some(dep_ticket) = Ticket::find_by_id(dep.depends_on_id)
+            .filter(ticket::Column::DeletedAt.is_null())
             .one(state.db.as_ref())
             .await
             .map_err(ApiError::from)?
@@ -106,6 +108,7 @@ pub async fn get_dependency_graph(
     let mut dependent_refs = Vec::new();
     for dep in dependents {
         if let Some(dep_ticket) = Ticket::find_by_id(dep.ticket_id)
+            .filter(ticket::Column::DeletedAt.is_null())
             .one(state.db.as_ref())
             .await
             .map_err(ApiError::from)?

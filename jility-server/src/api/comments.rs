@@ -44,6 +44,7 @@ pub async fn list_comments(
         let ticket = Ticket::find()
             .filter(ticket::Column::ProjectId.eq(project.id))
             .filter(ticket::Column::TicketNumber.eq(ticket_number))
+            .filter(ticket::Column::DeletedAt.is_null())
             .one(state.db.as_ref())
             .await
             .map_err(ApiError::from)?

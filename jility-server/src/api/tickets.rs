@@ -50,6 +50,9 @@ pub async fn list_tickets(
 ) -> ApiResult<Json<Vec<TicketResponse>>> {
     let mut query_builder = Ticket::find();
 
+    // Filter out soft-deleted tickets
+    query_builder = query_builder.filter(ticket::Column::DeletedAt.is_null());
+
     if let Some(project_id) = query.project_id {
         let uuid = Uuid::parse_str(&project_id)
             .map_err(|_| ApiError::InvalidInput(format!("Invalid project ID: {}", project_id)))?;
@@ -266,6 +269,7 @@ pub async fn get_ticket(
     let ticket = if let Ok(ticket_id) = Uuid::parse_str(&id) {
         // Lookup by UUID
         Ticket::find_by_id(ticket_id)
+            .filter(ticket::Column::DeletedAt.is_null())
             .one(state.db.as_ref())
             .await
             .map_err(ApiError::from)?
@@ -296,6 +300,7 @@ pub async fn get_ticket(
         Ticket::find()
             .filter(ticket::Column::ProjectId.eq(project.id))
             .filter(ticket::Column::TicketNumber.eq(ticket_number))
+            .filter(ticket::Column::DeletedAt.is_null())
             .one(state.db.as_ref())
             .await
             .map_err(ApiError::from)?
@@ -462,6 +467,7 @@ pub async fn update_ticket(
         .map_err(|_| ApiError::InvalidInput(format!("Invalid ticket ID: {}", id)))?;
 
     let ticket = Ticket::find_by_id(ticket_id)
+        .filter(ticket::Column::DeletedAt.is_null())
         .one(state.db.as_ref())
         .await
         .map_err(ApiError::from)?
@@ -546,6 +552,7 @@ pub async fn update_description(
         .map_err(|_| ApiError::InvalidInput(format!("Invalid ticket ID: {}", id)))?;
 
     let ticket = Ticket::find_by_id(ticket_id)
+        .filter(ticket::Column::DeletedAt.is_null())
         .one(state.db.as_ref())
         .await
         .map_err(ApiError::from)?
@@ -631,6 +638,7 @@ pub async fn update_status(
         .map_err(|e| ApiError::InvalidInput(e.to_string()))?;
 
     let ticket = Ticket::find_by_id(ticket_id)
+        .filter(ticket::Column::DeletedAt.is_null())
         .one(state.db.as_ref())
         .await
         .map_err(ApiError::from)?
@@ -723,6 +731,7 @@ pub async fn assign_ticket(
         .map_err(|_| ApiError::InvalidInput(format!("Invalid ticket ID: {}", id)))?;
 
     let ticket = Ticket::find_by_id(ticket_id)
+        .filter(ticket::Column::DeletedAt.is_null())
         .one(state.db.as_ref())
         .await
         .map_err(ApiError::from)?
@@ -807,6 +816,7 @@ pub async fn unassign_ticket(
         .map_err(|_| ApiError::InvalidInput(format!("Invalid ticket ID: {}", id)))?;
 
     let ticket = Ticket::find_by_id(ticket_id)
+        .filter(ticket::Column::DeletedAt.is_null())
         .one(state.db.as_ref())
         .await
         .map_err(ApiError::from)?
@@ -890,8 +900,37 @@ pub async fn delete_ticket(
     let ticket_id = Uuid::parse_str(&id)
         .map_err(|_| ApiError::InvalidInput(format!("Invalid ticket ID: {}", id)))?;
 
-    Ticket::delete_by_id(ticket_id)
-        .exec(state.db.as_ref())
+    let ticket = Ticket::find_by_id(ticket_id)
+        .one(state.db.as_ref())
+        .await
+        .map_err(ApiError::from)?
+        .ok_or_else(|| ApiError::NotFound(format!("Ticket not found: {}", id)))?;
+
+    // Soft delete: set deleted_at timestamp
+    let mut ticket: ticket::ActiveModel = ticket.into();
+    let now = Utc::now();
+    ticket.deleted_at = Set(Some(now));
+    ticket.updated_at = Set(now);
+
+    ticket
+        .update(state.db.as_ref())
+        .await
+        .map_err(ApiError::from)?;
+
+    // Record deletion in ticket_changes
+    let change = ticket_change::ActiveModel {
+        id: Set(Uuid::new_v4()),
+        ticket_id: Set(ticket_id),
+        change_type: Set(ChangeType::Deleted.as_str().to_string()),
+        field_name: Set(None),
+        old_value: Set(None),
+        new_value: Set(None),
+        changed_by: Set("system".to_string()),
+        changed_at: Set(now),
+        message: Set(Some("Ticket soft deleted".to_string())),
+    };
+    change
+        .insert(state.db.as_ref())
         .await
         .map_err(ApiError::from)?;
 

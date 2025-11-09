@@ -38,6 +38,10 @@ pub struct Model {
 
     /// Who created this ticket ("agent-1", "alice", etc.)
     pub created_by: String,
+
+    /// Soft delete timestamp - if set, ticket is considered deleted
+    #[sea_orm(nullable)]
+    pub deleted_at: Option<DateTimeUtc>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
