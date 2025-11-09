@@ -1,7 +1,6 @@
 [workspace]
 members = [
     "crates/jility-core",
-    "crates/jility-cli",
     "crates/jility-server",
     "crates/jility-mcp",
 ]
