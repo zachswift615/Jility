@@ -10,7 +10,7 @@ import { WorkspaceSwitcher } from '@/components/workspace-switcher'
 import { useProject } from '@/lib/project-context'
 import { useWorkspace } from '@/lib/workspace-context'
 import { Button } from '@/components/ui/button'
-import { Layers, BarChart3, Calendar, Activity, Clock, ChevronDown, ListTodo, Settings, FolderKanban } from 'lucide-react'
+import { Layers, BarChart3, Calendar, Activity, Clock, ChevronDown, ListTodo, Settings, FolderKanban, Kanban } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export function Navbar() {
@@ -32,7 +32,8 @@ export function Navbar() {
 
   const links = [
     { href: `/w/${slug}/backlog`, label: 'Backlog', icon: ListTodo },
-    { href: `/w/${slug}/board`, label: 'Board', icon: Layers },
+    { href: `/w/${slug}/board`, label: 'Board', icon: Kanban },
+    { href: `/w/${slug}/epics`, label: 'Epics', icon: Layers },
     { href: `/w/${slug}/sprint/planning`, label: 'Sprint Planning', icon: Calendar },
     { href: `/w/${slug}/sprint/active`, label: 'Active Sprint', icon: Activity },
     { href: `/w/${slug}/sprint/history`, label: 'History', icon: Clock },
