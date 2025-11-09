@@ -27,11 +27,11 @@ Jility combines:
 ## Key Features
 
 ### Human ↔ Agent Collaboration
-- **Unified interface** - Humans and agents use the same CLI, API, and UI
-- **Seamless handoffs** - Assign work between humans and agents with context
+- **MCP-native** - Claude Code can create, update, and manage tickets via MCP tools
+- **Seamless handoffs** - Assign work between humans and agents with full context
 - **Pairing** - Multiple assignees (human + agent) can work together on tickets
-- **@ mentions** - Natural communication between team members
-- **Activity transparency** - See who (human or agent) did what, when
+- **Comment threads** - Natural communication between team members and agents
+- **Activity transparency** - Full audit log showing who (human or agent) did what, when
 
 ### Intelligent Workflows
 - **Epic support** - Organize tickets into epics with JIRA-like hierarchy and progress tracking
@@ -41,12 +41,12 @@ Jility combines:
 - **Dependency tracking** - Automatic detection and management
 
 ### Developer Experience
-- **Command palette (⌘K)** - Keyboard-driven for power users
-- **Precise editing** - Token-efficient line-based description updates
-- **Version control** - Full history of ticket changes with diffs
-- **Git integration** - Auto-link commits, branch name suggestions
-- **Real-time updates** - WebSocket-powered live collaboration
-- **Markdown everywhere** - Native support with syntax highlighting
+- **MCP tools** - 20+ tools for creating, updating, and managing tickets via Claude Code
+- **Precise editing** - Token-efficient line-based description updates via MCP
+- **Full activity log** - Complete history of ticket changes with timestamps and attribution
+- **Git integration** - Link commits to tickets for traceability
+- **Markdown support** - Comments support markdown for rich formatting
+- **Soft delete** - Deleted tickets preserved for audit trail, don't clutter views
 
 ### Performance
 - **Fast** - Rust backend, no JVM bloat
@@ -61,48 +61,70 @@ Jility combines:
 ```
 jility/
 ├── jility-core      # Shared models, business logic
-├── jility-cli       # Command-line interface
 ├── jility-server    # Axum web server + REST API
 ├── jility-mcp       # MCP server for AI agents
 └── jility-web       # Next.js frontend
 ```
 
 **Tech Stack:**
-- Backend: Rust (Axum, SQLite/Postgres)
-- Frontend: Next.js 14 + Tailwind CSS
+- Backend: Rust (Axum, SeaORM, SQLite/Postgres)
+- Frontend: Next.js 14 + Tailwind CSS + shadcn/ui
 - MCP: Anthropic's Model Context Protocol
-- Real-time: WebSockets
+- AI Integration: Claude Code via MCP server
 
 ---
 
 ## Getting Started
 
-### Installation (coming soon)
+### Quick Start with Task Runner
+
+Jility uses [Task](https://taskfile.dev) for streamlined development:
+
 ```bash
-# Install CLI
-cargo install jility
+# Install dependencies and build
+task build
 
-# Initialize project
-cd your-project
-jility init
+# Start all services (Docker)
+task start
 
-# Start server (includes web UI)
-jility serve
+# Or run natively with hot reload
+task start-dev
+
+# Access the app
+open http://localhost:3901
 ```
 
-### Quick Start
+**Access Points:**
+- Frontend UI: `http://localhost:3901`
+- Backend API: `http://localhost:3900`
+
+### Using with Claude Code
+
+Jility is designed to be managed via Claude Code's MCP integration:
+
 ```bash
-# Create a ticket
-jility ticket create --title "Add user auth" --points 5
+# Create .mcp.json in project root
+cat > .mcp.json <<EOF
+{
+  "mcpServers": {
+    "jility": {
+      "command": "/path/to/jility/target/release/jility-mcp",
+      "env": {
+        "JILITY_API_URL": "http://localhost:3900/api",
+        "JILITY_PROJECT_ID": "your-project-id",
+        "JILITY_API_TOKEN": "your-api-token"
+      }
+    }
+  }
+}
+EOF
 
-# Assign to agent
-jility ticket assign TASK-1 --to=agent-1
-
-# Check team status
-jility team status
-
-# View in web UI
-open http://localhost:3000
+# Restart Claude Code
+# Now you can use MCP tools:
+# - mcp__jility__create_ticket
+# - mcp__jility__create_epic
+# - mcp__jility__list_tickets
+# And many more!
 ```
 
 ---
@@ -209,12 +231,14 @@ cargo run  # Will recreate and run migrations
 
 ```
 jility/
-├── jility-server/      # Rust backend (Axum + SQLite)
+├── crates/
+│   ├── jility-core/    # Shared Rust models/logic
+│   ├── jility-server/  # Axum backend + REST API
+│   └── jility-mcp/     # MCP server for AI agents
 ├── jility-web/         # Next.js frontend
-├── jility-core/        # Shared Rust models/logic
-├── jility-cli/         # CLI tool (coming soon)
-├── jility-mcp/         # MCP server for AI agents
-└── dev.sh              # Development helper script
+├── dev.sh              # Development helper script
+├── Taskfile.yml        # Task runner configuration
+└── .mcp.json           # MCP server configuration
 ```
 
 ---
@@ -255,28 +279,43 @@ jility/
 
 ## Use Cases
 
-### Solo Developer with AI Assistants
-```bash
-# You plan, agent implements
-jility ticket create --title "Build checkout flow" --assignee=agent-1
-jility ticket assign TASK-10 --to=agent-1 --message "Use Stripe SDK"
+### Solo Developer with Claude Code
+```typescript
+// In Claude Code, use MCP tools to manage your backlog
+// Create an epic for a major feature
+await mcp__jility__create_epic("User Authentication System", {
+  description: "Complete auth with login, registration, password reset",
+  epic_color: "#3b82f6"
+})
 
-# Agent works, you review
-jility review-queue
-jility ticket comment TASK-10 "Looks good! Let's add error handling"
+// Break it down into tickets
+await mcp__jility__create_ticket({
+  title: "Build login UI",
+  parent_epic_id: epic_id,
+  story_points: 3,
+  labels: ["frontend", "ui"]
+})
+
+// Claude implements, you review in the UI
+// Add feedback via comments
+await mcp__jility__add_comment(ticket_id,
+  "Looks good! Let's add error handling for invalid credentials"
+)
 ```
 
 ### Small Agency Team
-- Replace expensive JIRA/Linear subscription
-- Self-host on your infrastructure
-- Agents handle routine tasks (tests, migrations, etc.)
+- Replace expensive JIRA/Linear subscription ($10-15/user/month)
+- Self-host on your infrastructure (one-time setup)
+- AI agents handle routine tasks (tests, migrations, docs)
 - Humans focus on creative/strategic work
+- Full transparency - see exactly what agents did and why
 
-### AI-First Development
-- Multiple agents work in parallel on different tickets
-- Agents break down features into actionable tasks
-- Humans provide high-level direction and review
-- Full audit trail of agent decisions
+### AI-First Development Workflow
+1. **Plan in UI** - Create epics and high-level tickets in the web interface
+2. **Assign to Claude** - Let Claude Code break down features and implement
+3. **Review via MCP** - Claude can self-review, update statuses, add comments
+4. **Track Progress** - Real-time updates in the UI as Claude works
+5. **Iterate** - Claude responds to your feedback and adjusts implementation
 
 ---
 
