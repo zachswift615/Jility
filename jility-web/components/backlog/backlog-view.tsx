@@ -165,15 +165,25 @@ function BacklogContent() {
   }
 
   const handleQuickAdd = async (title: string) => {
+    if (!currentProject) {
+      console.error('No project selected')
+      return
+    }
+
     try {
-      await api.createTicket({
+      const newTicket = await api.createTicket({
+        project_id: currentProject.id,
         title,
         description: '',
         status: 'backlog',
       })
-      await loadTickets()
+
+      // Optimistic UI update - add ticket immediately
+      setTickets((prevTickets) => [newTicket, ...prevTickets])
     } catch (error) {
       console.error('Failed to create ticket:', error)
+      // Reload tickets on error to ensure consistency
+      await loadTickets()
     }
   }
 

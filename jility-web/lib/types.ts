@@ -95,6 +95,7 @@ export interface UpdateProjectRequest {
 }
 
 export interface CreateTicketRequest {
+  project_id: string
   title: string
   description: string
   story_points?: number
