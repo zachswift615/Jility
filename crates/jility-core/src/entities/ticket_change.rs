@@ -58,6 +58,7 @@ impl ActiveModelBehavior for ActiveModel {}
 pub enum ChangeType {
     // Lifecycle
     Created,
+    Deleted,
 
     // Field updates
     TitleChanged,
@@ -88,6 +89,7 @@ impl ChangeType {
     pub fn as_str(&self) -> &'static str {
         match self {
             Self::Created => "created",
+            Self::Deleted => "deleted",
             Self::TitleChanged => "title_changed",
             Self::DescriptionChanged => "description_changed",
             Self::StatusChanged => "status_changed",
@@ -110,6 +112,7 @@ impl ChangeType {
     pub fn from_str(s: &str) -> Result<Self, String> {
         match s {
             "created" => Ok(Self::Created),
+            "deleted" => Ok(Self::Deleted),
             "title_changed" => Ok(Self::TitleChanged),
             "description_changed" => Ok(Self::DescriptionChanged),
             "status_changed" => Ok(Self::StatusChanged),
