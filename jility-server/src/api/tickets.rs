@@ -39,7 +39,8 @@ async fn format_ticket_number(
 #[derive(Debug, Deserialize)]
 pub struct ListTicketsQuery {
     pub project_id: Option<String>,
-    pub status: Option<Vec<String>>,
+    #[serde(default)]
+    pub status: Vec<String>,
     pub assignee: Option<String>,
 }
 
@@ -55,10 +56,8 @@ pub async fn list_tickets(
         query_builder = query_builder.filter(ticket::Column::ProjectId.eq(uuid));
     }
 
-    if let Some(statuses) = query.status {
-        if !statuses.is_empty() {
-            query_builder = query_builder.filter(ticket::Column::Status.is_in(statuses));
-        }
+    if !query.status.is_empty() {
+        query_builder = query_builder.filter(ticket::Column::Status.is_in(query.status));
     }
 
     let tickets = query_builder
@@ -263,15 +262,47 @@ pub async fn get_ticket(
     State(state): State<AppState>,
     Path(id): Path<String>,
 ) -> ApiResult<Json<TicketDetailResponse>> {
-    let ticket_id = Uuid::parse_str(&id)
-        .map_err(|_| ApiError::InvalidInput(format!("Invalid ticket ID: {}", id)))?;
+    // Try to parse as UUID first
+    let ticket = if let Ok(ticket_id) = Uuid::parse_str(&id) {
+        // Lookup by UUID
+        Ticket::find_by_id(ticket_id)
+            .one(state.db.as_ref())
+            .await
+            .map_err(ApiError::from)?
+            .ok_or_else(|| ApiError::NotFound(format!("Ticket not found: {}", id)))?
+    } else {
+        // Try to parse as ticket number (e.g., "VOX-2" or "JIL-42")
+        let parts: Vec<&str> = id.split('-').collect();
+        if parts.len() != 2 {
+            return Err(ApiError::InvalidInput(format!(
+                "Invalid ticket identifier. Expected UUID or ticket number (e.g., VOX-2), got: {}",
+                id
+            )));
+        }
 
-    // Get ticket
-    let ticket = Ticket::find_by_id(ticket_id)
-        .one(state.db.as_ref())
-        .await
-        .map_err(ApiError::from)?
-        .ok_or_else(|| ApiError::NotFound(format!("Ticket not found: {}", id)))?;
+        let project_key = parts[0];
+        let ticket_number: i32 = parts[1].parse()
+            .map_err(|_| ApiError::InvalidInput(format!("Invalid ticket number: {}", id)))?;
+
+        // Find project by key
+        let project = Project::find()
+            .filter(project::Column::Key.eq(project_key))
+            .one(state.db.as_ref())
+            .await
+            .map_err(ApiError::from)?
+            .ok_or_else(|| ApiError::NotFound(format!("Project not found with key: {}", project_key)))?;
+
+        // Find ticket by project_id and ticket_number
+        Ticket::find()
+            .filter(ticket::Column::ProjectId.eq(project.id))
+            .filter(ticket::Column::TicketNumber.eq(ticket_number))
+            .one(state.db.as_ref())
+            .await
+            .map_err(ApiError::from)?
+            .ok_or_else(|| ApiError::NotFound(format!("Ticket not found: {}", id)))?
+    };
+
+    let ticket_id = ticket.id;
 
     // Get assignees
     let assignees = TicketAssignee::find()

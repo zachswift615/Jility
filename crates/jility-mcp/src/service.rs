@@ -255,7 +255,7 @@ impl JilityService {
 
         if let Some(status) = &status {
             for s in status {
-                query_params.push(format!("status={}", s));
+                query_params.push(format!("status[]={}", s));
             }
         }
         if let Some(assignee) = &assignee {
@@ -269,14 +269,16 @@ impl JilityService {
 
         let response = self.build_request(
             reqwest::Method::GET,
-            url
+            url.clone()
         )
             .send()
             .await
             .map_err(|e| format!("Failed to list tickets: {}", e))?;
 
         if !response.status().is_success() {
-            return Err("Failed to list tickets".to_string());
+            let status = response.status();
+            let error_body = response.text().await.unwrap_or_else(|_| "Unable to read error".to_string());
+            return Err(format!("Failed to list tickets (HTTP {}): {} | URL: {}", status, error_body, url));
         }
 
         let tickets: Vec<serde_json::Value> = response.json().await
