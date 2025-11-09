@@ -195,6 +195,7 @@ export const api = {
   deleteTicket: async (id: string): Promise<{ success: boolean }> => {
     const res = await fetch(`${API_BASE}/tickets/${id}`, {
       method: 'DELETE',
+      headers: getAuthHeaders(),
     })
     return handleResponse<{ success: boolean }>(res)
   },
