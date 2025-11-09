@@ -33,6 +33,8 @@ pub struct TicketResponse {
     pub created_by: String,
     pub parent_id: Option<String>,
     pub epic_id: Option<String>,
+    pub is_epic: bool,
+    pub epic_color: Option<String>,
 }
 
 #[derive(Debug, Serialize)]

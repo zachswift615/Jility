@@ -96,17 +96,19 @@ pub async fn list_tickets(
         responses.push(TicketResponse {
             id: ticket.id.to_string(),
             number,
-            title: ticket.title,
-            description: ticket.description,
-            status: ticket.status,
+            title: ticket.title.clone(),
+            description: ticket.description.clone(),
+            status: ticket.status.clone(),
             story_points: ticket.story_points,
             assignees,
             labels,
             created_at: ticket.created_at.to_rfc3339(),
             updated_at: ticket.updated_at.to_rfc3339(),
-            created_by: ticket.created_by,
+            created_by: ticket.created_by.clone(),
             parent_id: ticket.parent_id.map(|id| id.to_string()),
             epic_id: ticket.epic_id.map(|id| id.to_string()),
+            is_epic: ticket.is_epic,
+            epic_color: ticket.epic_color.clone(),
         });
     }
 
@@ -135,6 +137,28 @@ pub async fn create_ticket(
 
     let ticket_number = max_number.unwrap_or(0) + 1;
 
+    // Validation: Prevent nesting epics (epics cannot have parent epics)
+    if payload.is_epic && payload.epic_id.is_some() {
+        return Err(ApiError::InvalidInput(
+            "Epics cannot belong to other epics (no epic nesting allowed)".to_string()
+        ));
+    }
+
+    // Validation: If epic_id is provided, verify it references an actual epic
+    if let Some(parent_epic_id) = payload.epic_id {
+        let parent = Ticket::find_by_id(parent_epic_id)
+            .one(state.db.as_ref())
+            .await
+            .map_err(ApiError::from)?
+            .ok_or_else(|| ApiError::NotFound(format!("Parent epic not found: {}", parent_epic_id)))?;
+
+        if !parent.is_epic {
+            return Err(ApiError::InvalidInput(
+                "epic_id must reference a ticket with is_epic=true".to_string()
+            ));
+        }
+    }
+
     // Start transaction
     let txn = state.db.begin().await.map_err(ApiError::from)?;
 
@@ -149,9 +173,9 @@ pub async fn create_ticket(
         story_points: Set(payload.story_points),
         epic_id: Set(payload.epic_id),
         parent_id: Set(payload.parent_id),
-        is_epic: Set(false), // Default to false, will be configurable in UI later
-        epic_color: Set(None), // No color by default
-        parent_epic_id: Set(None), // No parent epic by default
+        is_epic: Set(payload.is_epic),
+        epic_color: Set(payload.epic_color.clone()),
+        parent_epic_id: Set(None), // Will use epic_id for parent epic relationship
         created_at: Set(now),
         updated_at: Set(now),
         deleted_at: Set(None), // Not deleted
@@ -253,6 +277,8 @@ pub async fn create_ticket(
         created_by: result.created_by,
         parent_id: result.parent_id.map(|id| id.to_string()),
         epic_id: result.epic_id.map(|id| id.to_string()),
+        is_epic: result.is_epic,
+        epic_color: result.epic_color.clone(),
     };
 
     // Broadcast WebSocket update
@@ -472,17 +498,19 @@ pub async fn get_ticket(
     let ticket_response = TicketResponse {
         id: ticket.id.to_string(),
         number,
-        title: ticket.title,
-        description: ticket.description,
-        status: ticket.status,
+        title: ticket.title.clone(),
+        description: ticket.description.clone(),
+        status: ticket.status.clone(),
         story_points: ticket.story_points,
         assignees,
         labels,
         created_at: ticket.created_at.to_rfc3339(),
         updated_at: ticket.updated_at.to_rfc3339(),
-        created_by: ticket.created_by,
+        created_by: ticket.created_by.clone(),
         parent_id: ticket.parent_id.map(|id| id.to_string()),
         epic_id: ticket.epic_id.map(|id| id.to_string()),
+        is_epic: ticket.is_epic,
+        epic_color: ticket.epic_color.clone(),
     };
 
     Ok(Json(TicketDetailResponse {
@@ -568,6 +596,8 @@ pub async fn update_ticket(
         created_by: result.created_by,
         parent_id: result.parent_id.map(|id| id.to_string()),
         epic_id: result.epic_id.map(|id| id.to_string()),
+        is_epic: result.is_epic,
+        epic_color: result.epic_color.clone(),
     };
 
     // Broadcast update
@@ -648,17 +678,19 @@ pub async fn update_description(
     Ok(Json(TicketResponse {
         id: result.id.to_string(),
         number,
-        title: result.title,
-        description: result.description,
-        status: result.status,
+        title: result.title.clone(),
+        description: result.description.clone(),
+        status: result.status.clone(),
         story_points: result.story_points,
         assignees,
         labels,
         created_at: result.created_at.to_rfc3339(),
         updated_at: result.updated_at.to_rfc3339(),
-        created_by: result.created_by,
+        created_by: result.created_by.clone(),
         parent_id: result.parent_id.map(|id| id.to_string()),
         epic_id: result.epic_id.map(|id| id.to_string()),
+        is_epic: result.is_epic,
+        epic_color: result.epic_color.clone(),
     }))
 }
 
@@ -734,17 +766,19 @@ pub async fn update_status(
     let response = TicketResponse {
         id: result.id.to_string(),
         number,
-        title: result.title,
-        description: result.description,
+        title: result.title.clone(),
+        description: result.description.clone(),
         status: result.status.clone(),
         story_points: result.story_points,
         assignees,
         labels,
         created_at: result.created_at.to_rfc3339(),
         updated_at: result.updated_at.to_rfc3339(),
-        created_by: result.created_by,
+        created_by: result.created_by.clone(),
         parent_id: result.parent_id.map(|id| id.to_string()),
         epic_id: result.epic_id.map(|id| id.to_string()),
+        is_epic: result.is_epic,
+        epic_color: result.epic_color.clone(),
     };
 
     // Broadcast status change
@@ -830,17 +864,19 @@ pub async fn assign_ticket(
     Ok(Json(TicketResponse {
         id: ticket.id.to_string(),
         number,
-        title: ticket.title,
-        description: ticket.description,
-        status: ticket.status,
+        title: ticket.title.clone(),
+        description: ticket.description.clone(),
+        status: ticket.status.clone(),
         story_points: ticket.story_points,
         assignees,
         labels,
         created_at: ticket.created_at.to_rfc3339(),
         updated_at: ticket.updated_at.to_rfc3339(),
-        created_by: ticket.created_by,
+        created_by: ticket.created_by.clone(),
         parent_id: ticket.parent_id.map(|id| id.to_string()),
         epic_id: ticket.epic_id.map(|id| id.to_string()),
+        is_epic: ticket.is_epic,
+        epic_color: ticket.epic_color.clone(),
     }))
 }
 
@@ -916,17 +952,19 @@ pub async fn unassign_ticket(
     Ok(Json(TicketResponse {
         id: ticket.id.to_string(),
         number,
-        title: ticket.title,
-        description: ticket.description,
-        status: ticket.status,
+        title: ticket.title.clone(),
+        description: ticket.description.clone(),
+        status: ticket.status.clone(),
         story_points: ticket.story_points,
         assignees,
         labels,
         created_at: ticket.created_at.to_rfc3339(),
         updated_at: ticket.updated_at.to_rfc3339(),
-        created_by: ticket.created_by,
+        created_by: ticket.created_by.clone(),
         parent_id: ticket.parent_id.map(|id| id.to_string()),
         epic_id: ticket.epic_id.map(|id| id.to_string()),
+        is_epic: ticket.is_epic,
+        epic_color: ticket.epic_color.clone(),
     }))
 }
 

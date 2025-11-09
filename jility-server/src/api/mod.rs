@@ -2,6 +2,7 @@ pub mod activity;
 pub mod auth;
 pub mod comments;
 pub mod dependencies;
+pub mod epics;
 pub mod git;
 pub mod projects;
 pub mod search;
@@ -45,6 +46,10 @@ pub fn api_routes() -> (Router<AppState>, Router<AppState>) {
         .route("/api/workspaces/:slug/invites", get(workspaces::list_pending_invites))
         // Invite acceptance
         .route("/api/invites/:token/accept", post(workspaces::accept_invite))
+        // Epics
+        .route("/api/epics", get(epics::list_epics))
+        .route("/api/epics/:id", get(epics::get_epic))
+        .route("/api/epics/:id/tickets", get(epics::get_epic_tickets))
         // Auth - protected
         .route("/api/auth/logout", post(auth::logout))
         .route("/api/auth/me", get(auth::get_me))
