@@ -15,7 +15,7 @@ export function MobileBottomNav() {
     { href: `/w/${slug}/board`, label: 'Board', icon: Kanban },
     { href: `/w/${slug}/epics`, label: 'Epics', icon: Layers },
     { href: `/w/${slug}/backlog`, label: 'Backlog', icon: ListTodo },
-    { href: `/w/${slug}/profile`, label: 'Settings', icon: Settings },
+    { href: `/w/${slug}/settings`, label: 'Settings', icon: Settings },
   ]
 
   return (

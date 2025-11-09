@@ -10,7 +10,7 @@ import { WorkspaceSwitcher } from '@/components/workspace-switcher'
 import { useProject } from '@/lib/project-context'
 import { useWorkspace } from '@/lib/workspace-context'
 import { Button } from '@/components/ui/button'
-import { Layers, BarChart3, Calendar, Activity, Clock, ChevronDown, ListTodo, Settings, FolderKanban, Kanban } from 'lucide-react'
+import { Layers, BarChart3, Calendar, Activity, Clock, ChevronDown, ListTodo, Settings, Kanban } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export function Navbar() {
@@ -37,7 +37,6 @@ export function Navbar() {
     { href: `/w/${slug}/sprint/planning`, label: 'Sprint Planning', icon: Calendar },
     { href: `/w/${slug}/sprint/active`, label: 'Active Sprint', icon: Activity },
     { href: `/w/${slug}/sprint/history`, label: 'History', icon: Clock },
-    { href: `/w/${slug}/projects`, label: 'Projects', icon: FolderKanban },
     { href: `/w/${slug}/settings`, label: 'Settings', icon: Settings },
   ]
 
@@ -117,13 +116,13 @@ export function Navbar() {
             <div className="hidden sm:block">
               <CommandPalette />
             </div>
-            <Link href={`/w/${slug}/profile`} className="hidden md:block">
+            <Link href={`/w/${slug}/settings`} className="hidden md:block">
               <Button
                 variant="ghost"
                 size="sm"
                 className={cn(
                   'flex items-center gap-2',
-                  pathname === `/w/${slug}/profile` && 'bg-accent text-accent-foreground'
+                  pathname === `/w/${slug}/settings` && 'bg-accent text-accent-foreground'
                 )}
               >
                 <Settings className="h-4 w-4" />
