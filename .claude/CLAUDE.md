@@ -721,6 +721,10 @@ The Jility MCP server is configured in `.mcp.json` and provides the following to
   - Parameters: `ticket_id`, `content`, `operation` (replace_all, append, prepend, replace_lines, replace_section)
 
 ### Collaboration
+- **`mcp__jility__get_comments`** - Get all comments for a ticket
+  - Parameters: `ticket_id` (supports both UUID and ticket number format like JIL-42)
+  - Returns: Array of comments with author, content, timestamps
+
 - **`mcp__jility__add_comment`** - Add a comment to a ticket
   - Parameters: `ticket_id`, `content`
   - Supports `@mentions` for notifications
