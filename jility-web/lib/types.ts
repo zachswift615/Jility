@@ -55,7 +55,7 @@ export interface TicketChange {
   field_name?: string
   old_value?: string
   new_value?: string
-  changed_by: string
+  user_name: string
   changed_at: string
   message?: string
 }

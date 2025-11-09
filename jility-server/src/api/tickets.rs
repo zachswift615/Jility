@@ -16,9 +16,9 @@ use crate::{
     state::AppState,
 };
 use jility_core::entities::{
-    ticket, ticket_assignee, ticket_label, ticket_change, comment, commit_link, ticket_dependency, project,
+    ticket, ticket_assignee, ticket_label, ticket_change, comment, commit_link, ticket_dependency, project, user,
     Ticket, TicketAssignee, TicketLabel, TicketChange, Comment, CommitLink,
-    TicketDependency, TicketStatus, ChangeType, Project,
+    TicketDependency, TicketStatus, ChangeType, Project, User,
 };
 
 /// Helper function to format ticket number with project key
@@ -411,22 +411,55 @@ pub async fn get_ticket(
         .collect();
 
     // Get recent changes
-    let changes = TicketChange::find()
+    let ticket_changes = TicketChange::find()
         .filter(ticket_change::Column::TicketId.eq(ticket_id))
         .all(state.db.as_ref())
         .await
-        .map_err(ApiError::from)?
+        .map_err(ApiError::from)?;
+
+    // Build a set of unique user identifiers (could be email or username)
+    let user_identifiers: Vec<String> = ticket_changes
+        .iter()
+        .map(|c| c.changed_by.clone())
+        .collect();
+
+    // Fetch all users that match these identifiers
+    let users = User::find()
+        .filter(
+            user::Column::Email.is_in(user_identifiers.clone())
+                .or(user::Column::Username.is_in(user_identifiers))
+        )
+        .all(state.db.as_ref())
+        .await
+        .map_err(ApiError::from)?;
+
+    // Create a map of email/username -> username for quick lookup
+    let mut user_map = std::collections::HashMap::new();
+    for user in users {
+        user_map.insert(user.email.clone(), user.username.clone());
+        user_map.insert(user.username.clone(), user.username.clone());
+    }
+
+    // Map changes with usernames
+    let changes: Vec<ChangeEventResponse> = ticket_changes
         .into_iter()
         .take(10) // Limit to 10 most recent
-        .map(|c| ChangeEventResponse {
-            id: c.id.to_string(),
-            change_type: c.change_type,
-            field_name: c.field_name,
-            old_value: c.old_value,
-            new_value: c.new_value,
-            changed_by: c.changed_by,
-            changed_at: c.changed_at.to_rfc3339(),
-            message: c.message,
+        .map(|c| {
+            let user_name = user_map
+                .get(&c.changed_by)
+                .cloned()
+                .unwrap_or_else(|| c.changed_by.clone());
+
+            ChangeEventResponse {
+                id: c.id.to_string(),
+                change_type: c.change_type,
+                field_name: c.field_name,
+                old_value: c.old_value,
+                new_value: c.new_value,
+                user_name,
+                changed_at: c.changed_at.to_rfc3339(),
+                message: c.message,
+            }
         })
         .collect();
 
