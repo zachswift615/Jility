@@ -43,6 +43,7 @@ function BacklogContent() {
     needs_estimation: true,
     ideas: false,
   })
+  const [showTopQuickAdd, setShowTopQuickAdd] = useState(false)
   const { user } = useAuth()
   const { currentWorkspace } = useWorkspace()
   const { currentProject } = useProject()
@@ -180,6 +181,9 @@ function BacklogContent() {
 
       // Optimistic UI update - add ticket immediately
       setTickets((prevTickets) => [newTicket, ...prevTickets])
+
+      // Hide the top quick add form after successful creation
+      setShowTopQuickAdd(false)
     } catch (error) {
       console.error('Failed to create ticket:', error)
       // Reload tickets on error to ensure consistency
@@ -216,6 +220,7 @@ function BacklogContent() {
             totalPoints={totalPoints}
             filter={filter}
             onFilterChange={setFilter}
+            onQuickAdd={() => setShowTopQuickAdd(true)}
           />
           <div className="px-4">
             <AssigneeFilter members={members} currentUserEmail={user?.email} />
@@ -228,6 +233,13 @@ function BacklogContent() {
           onDragEnd={handleDragEnd}
         >
           <div className="bg-card border border-border rounded-lg overflow-hidden shadow-sm">
+            {/* Top Quick Add Input - shown when button is clicked */}
+            {showTopQuickAdd && (
+              <div className="border-b border-border">
+                <QuickAddInput onAdd={handleQuickAdd} autoFocus />
+              </div>
+            )}
+
             {/* Ready for Sprint Section */}
             <BacklogSection
               title="Ready for Sprint"
