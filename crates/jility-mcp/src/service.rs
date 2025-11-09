@@ -427,6 +427,50 @@ impl JilityService {
         Ok(format!("✅ Added comment to {}", ticket_id))
     }
 
+    /// Get comments for a ticket
+    #[tool(
+        description = "Get all comments for a ticket. Returns array of comments with author, timestamp, and content. Useful for reading human discussion before working on a ticket."
+    )]
+    pub async fn get_comments(
+        &self,
+        #[tool(param)] ticket_id: String,
+    ) -> Result<String, String> {
+
+        let response = self.build_request(
+            reqwest::Method::GET,
+            format!("{}/tickets/{}/comments", self.api_base_url, ticket_id)
+        )
+            .send()
+            .await
+            .map_err(|e| format!("Failed to get comments: {}", e))?;
+
+        if !response.status().is_success() {
+            return Err(format!("Failed to get comments for ticket: {}", ticket_id));
+        }
+
+        let comments: Vec<serde_json::Value> = response.json().await
+            .map_err(|e| format!("Failed to parse response: {}", e))?;
+
+        if comments.is_empty() {
+            return Ok(format!("💬 No comments on {}", ticket_id));
+        }
+
+        let mut output = format!("💬 {} comments on {}\n\n", comments.len(), ticket_id);
+
+        for comment in comments {
+            let author = comment["author"].as_str().unwrap_or("unknown");
+            let created_at = comment["created_at"].as_str().unwrap_or("");
+            let content = comment["content"].as_str().unwrap_or("");
+
+            output.push_str(&format!(
+                "**{}** ({})\n{}\n\n---\n\n",
+                author, created_at, content
+            ));
+        }
+
+        Ok(output)
+    }
+
     /// Assign or reassign ticket
     #[tool(
         description = "Assign ticket to one or more people (supports pairing). Pass empty array to unassign. Optionally include a handoff message."
@@ -673,6 +717,7 @@ tool_box!(JilityService {
     update_description,
     update_status,
     add_comment,
+    get_comments,
     assign_ticket,
     link_commit,
     add_dependency,
