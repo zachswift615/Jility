@@ -5,6 +5,7 @@ use rmcp::{
 };
 use reqwest::Client;
 use serde_json::json;
+use chrono::{Utc, Duration};
 
 use crate::params::*;
 
@@ -946,10 +947,18 @@ impl JilityService {
     ) -> Result<String, String> {
         let url = format!("{}/sprints/{}/start", self.api_base_url, sprint_id);
 
+        // Use current date as start, and 2 weeks from now as end
+        let now = Utc::now();
+        let end_date = now + Duration::days(14);
+
         let response = self.build_request(
             reqwest::Method::POST,
             url
         )
+            .json(&json!({
+                "start_date": now.to_rfc3339(),
+                "end_date": end_date.to_rfc3339(),
+            }))
             .send()
             .await
             .map_err(|e| format!("Failed to start sprint: {}", e))?;
