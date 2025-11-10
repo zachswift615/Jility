@@ -146,6 +146,7 @@ pub struct SprintResponse {
     pub status: String,
     pub start_date: Option<String>,
     pub end_date: Option<String>,
+    pub capacity: Option<i32>,
     pub created_at: String,
     pub updated_at: String,
 }

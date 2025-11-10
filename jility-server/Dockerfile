@@ -3,18 +3,21 @@ FROM rust:latest as builder
 
 WORKDIR /app
 
-# Copy manifests
+# Copy workspace manifests
 COPY Cargo.toml Cargo.lock ./
 COPY jility-server/Cargo.toml ./jility-server/
+
+# Copy all local crate dependencies (these are part of the source)
 COPY crates ./crates
 
-# Build dependencies (cached layer)
+# Build dependencies with dummy binary (cached layer)
+# This caches both external dependencies AND local crate compilation
 RUN mkdir -p jility-server/src && \
     echo "fn main() {}" > jility-server/src/main.rs && \
     cargo build --manifest-path jility-server/Cargo.toml --release && \
     rm -rf jility-server/src
 
-# Copy actual source code
+# Copy actual binary source code
 COPY jility-server/src ./jility-server/src
 
 # Build the application

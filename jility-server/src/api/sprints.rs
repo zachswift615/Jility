@@ -16,8 +16,8 @@ use crate::{
     state::AppState,
 };
 use jility_core::entities::{
-    sprint, sprint_ticket, ticket, ticket_change,
-    Sprint, SprintTicket, Ticket, TicketChange, ChangeType,
+    sprint, sprint_ticket, ticket, ticket_change, project,
+    Sprint, SprintTicket, Ticket, TicketChange, ChangeType, Project,
 };
 
 #[derive(Debug, Deserialize)]
@@ -57,6 +57,7 @@ pub async fn list_sprints(
             status: s.status,
             start_date: s.start_date.map(|d| format_datetime(&d)),
             end_date: s.end_date.map(|d| format_datetime(&d)),
+            capacity: s.capacity,
             created_at: format_datetime(&s.created_at),
             updated_at: format_datetime(&s.updated_at),
         })
@@ -101,6 +102,7 @@ pub async fn create_sprint(
         start_date: Set(start_date),
         end_date: Set(end_date),
         status: Set("planning".to_string()),
+        capacity: Set(req.capacity),
         created_at: Set(now),
         updated_at: Set(now),
     };
@@ -115,6 +117,7 @@ pub async fn create_sprint(
         status: sprint.status,
         start_date: sprint.start_date.map(|d| format_datetime(&d)),
         end_date: sprint.end_date.map(|d| format_datetime(&d)),
+        capacity: sprint.capacity,
         created_at: format_datetime(&sprint.created_at),
         updated_at: format_datetime(&sprint.updated_at),
     }))
@@ -239,6 +242,7 @@ pub async fn get_sprint(
             status: sprint.status,
             start_date: sprint.start_date.map(|d| format_datetime(&d)),
             end_date: sprint.end_date.map(|d| format_datetime(&d)),
+            capacity: sprint.capacity,
             created_at: format_datetime(&sprint.created_at),
             updated_at: format_datetime(&sprint.updated_at),
         },
@@ -286,6 +290,10 @@ pub async fn update_sprint(
         active_sprint.end_date = Set(Some(end_date));
     }
 
+    if let Some(capacity) = req.capacity {
+        active_sprint.capacity = Set(Some(capacity));
+    }
+
     active_sprint.updated_at = Set(Utc::now());
 
     let sprint = active_sprint.update(state.db.as_ref()).await.map_err(ApiError::from)?;
@@ -298,6 +306,7 @@ pub async fn update_sprint(
         status: sprint.status,
         start_date: sprint.start_date.map(|d| format_datetime(&d)),
         end_date: sprint.end_date.map(|d| format_datetime(&d)),
+        capacity: sprint.capacity,
         created_at: format_datetime(&sprint.created_at),
         updated_at: format_datetime(&sprint.updated_at),
     }))
@@ -374,6 +383,7 @@ pub async fn start_sprint(
         status: sprint.status,
         start_date: sprint.start_date.map(|d| format_datetime(&d)),
         end_date: sprint.end_date.map(|d| format_datetime(&d)),
+        capacity: sprint.capacity,
         created_at: format_datetime(&sprint.created_at),
         updated_at: format_datetime(&sprint.updated_at),
     }))
@@ -411,6 +421,7 @@ pub async fn complete_sprint(
         status: sprint.status,
         start_date: sprint.start_date.map(|d| format_datetime(&d)),
         end_date: sprint.end_date.map(|d| format_datetime(&d)),
+        capacity: sprint.capacity,
         created_at: format_datetime(&sprint.created_at),
         updated_at: format_datetime(&sprint.updated_at),
     }))
@@ -424,8 +435,45 @@ pub async fn add_ticket_to_sprint(
 ) -> ApiResult<Json<()>> {
     let sprint_uuid = Uuid::parse_str(&sprint_id)
         .map_err(|_| ApiError::InvalidInput(format!("Invalid sprint ID: {}", sprint_id)))?;
-    let ticket_uuid = Uuid::parse_str(&ticket_id)
-        .map_err(|_| ApiError::InvalidInput(format!("Invalid ticket ID: {}", ticket_id)))?;
+
+    // Parse ticket_id (supports both UUID and ticket number like "JIL-42")
+    let ticket_uuid = if let Ok(uuid) = Uuid::parse_str(&ticket_id) {
+        // Already a UUID
+        uuid
+    } else {
+        // Try to parse as ticket number (e.g., "JIL-42")
+        let parts: Vec<&str> = ticket_id.split('-').collect();
+        if parts.len() != 2 {
+            return Err(ApiError::InvalidInput(format!(
+                "Invalid ticket identifier. Expected UUID or ticket number (e.g., JIL-42), got: {}",
+                ticket_id
+            )));
+        }
+
+        let project_key = parts[0];
+        let ticket_number: i32 = parts[1].parse()
+            .map_err(|_| ApiError::InvalidInput(format!("Invalid ticket number: {}", ticket_id)))?;
+
+        // Find project by key
+        let project = Project::find()
+            .filter(project::Column::Key.eq(project_key))
+            .one(state.db.as_ref())
+            .await
+            .map_err(ApiError::from)?
+            .ok_or_else(|| ApiError::NotFound(format!("Project not found with key: {}", project_key)))?;
+
+        // Find ticket by project_id and ticket_number
+        let ticket = Ticket::find()
+            .filter(ticket::Column::ProjectId.eq(project.id))
+            .filter(ticket::Column::TicketNumber.eq(ticket_number))
+            .filter(ticket::Column::DeletedAt.is_null())
+            .one(state.db.as_ref())
+            .await
+            .map_err(ApiError::from)?
+            .ok_or_else(|| ApiError::NotFound(format!("Ticket not found: {}", ticket_id)))?;
+
+        ticket.id
+    };
 
     // Verify sprint exists
     Sprint::find_by_id(sprint_uuid)
@@ -433,14 +481,6 @@ pub async fn add_ticket_to_sprint(
         .await
         .map_err(ApiError::from)?
         .ok_or_else(|| ApiError::NotFound(format!("Sprint {} not found", sprint_id)))?;
-
-    // Verify ticket exists
-    Ticket::find_by_id(ticket_uuid)
-        .filter(ticket::Column::DeletedAt.is_null())
-        .one(state.db.as_ref())
-        .await
-        .map_err(ApiError::from)?
-        .ok_or_else(|| ApiError::NotFound(format!("Ticket {} not found", ticket_id)))?;
 
     // Check if ticket is already in sprint
     let existing = SprintTicket::find()
@@ -765,6 +805,7 @@ pub async fn get_sprint_history(
             status: s.status,
             start_date: s.start_date.map(|d| format_datetime(&d)),
             end_date: s.end_date.map(|d| format_datetime(&d)),
+            capacity: s.capacity,
             created_at: format_datetime(&s.created_at),
             updated_at: format_datetime(&s.updated_at),
         })

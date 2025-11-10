@@ -170,6 +170,7 @@ pub struct CreateSprintRequest {
     pub goal: Option<String>,
     pub start_date: Option<String>, // ISO 8601 format
     pub end_date: Option<String>,   // ISO 8601 format
+    pub capacity: Option<i32>,      // Story point capacity
 }
 
 #[derive(Debug, Deserialize)]
@@ -178,6 +179,7 @@ pub struct UpdateSprintRequest {
     pub goal: Option<String>,
     pub start_date: Option<String>,
     pub end_date: Option<String>,
+    pub capacity: Option<i32>,
 }
 
 #[derive(Debug, Deserialize)]

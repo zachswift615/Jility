@@ -23,6 +23,10 @@ pub struct Model {
     /// "planning", "active", "completed"
     pub status: String,
 
+    /// Sprint capacity in story points (optional)
+    #[sea_orm(nullable)]
+    pub capacity: Option<i32>,
+
     pub created_at: DateTimeUtc,
     pub updated_at: DateTimeUtc,
 }
