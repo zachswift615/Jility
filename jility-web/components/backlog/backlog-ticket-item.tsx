@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { GripVertical, Edit, MoreHorizontal, BarChart3, User, MessageSquare, Bot, Link2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { AssigneeAvatars } from '@/components/ticket/assignee-avatars'
+import { useWorkspace } from '@/lib/workspace-context'
 
 interface BacklogTicketItemProps {
   ticket: Ticket
@@ -16,6 +17,7 @@ interface BacklogTicketItemProps {
 
 export function BacklogTicketItem({ ticket, isDragging = false }: BacklogTicketItemProps) {
   const router = useRouter()
+  const { currentWorkspace } = useWorkspace()
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id: ticket.id,
   })
@@ -37,7 +39,8 @@ export function BacklogTicketItem({ ticket, isDragging = false }: BacklogTicketI
   }
 
   const handleClick = () => {
-    router.push(`/ticket/${ticket.id}`)
+    const slug = currentWorkspace?.slug || ''
+    router.push(`/w/${slug}/ticket/${ticket.id}`)
   }
 
   return (
