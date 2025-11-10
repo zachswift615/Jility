@@ -36,6 +36,21 @@ export function CreateTicketDialog({ open, onClose, onCreated }: CreateTicketDia
     }
   }, [currentProject])
 
+  // Reset form when dialog opens
+  useEffect(() => {
+    if (open) {
+      setFormData({
+        title: '',
+        description: '',
+        status: 'backlog',
+        story_points: undefined,
+        project_id: currentProject?.id || '',
+      })
+      setError(null)
+      setActiveTab('write')
+    }
+  }, [open, currentProject])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -43,9 +58,18 @@ export function CreateTicketDialog({ open, onClose, onCreated }: CreateTicketDia
 
     try {
       await api.createTicket(formData)
+
+      // Reset form state after successful creation
+      setFormData({
+        title: '',
+        description: '',
+        status: 'backlog',
+        story_points: undefined,
+        project_id: currentProject?.id || '',
+      })
+
       onCreated?.()
       onClose()
-      setFormData({ title: '', description: '', status: 'backlog', story_points: undefined, project_id: '' })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create ticket')
     } finally {
