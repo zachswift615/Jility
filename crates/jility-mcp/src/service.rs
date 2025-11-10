@@ -837,6 +837,285 @@ impl JilityService {
 
         Ok(output)
     }
+
+    /// Create a new sprint
+    #[tool(
+        description = "Create a new sprint with name, capacity, and optional dates. Returns sprint ID and details."
+    )]
+    pub async fn create_sprint(
+        &self,
+        #[tool(param)] name: String,
+        #[tool(param)] capacity: Option<i32>,
+        #[tool(param)] start_date: Option<String>,
+        #[tool(param)] end_date: Option<String>,
+    ) -> Result<String, String> {
+        let url = format!("{}/projects/{}/sprints", self.api_base_url, self.project_id);
+
+        let response = self.build_request(
+            reqwest::Method::POST,
+            url
+        )
+            .json(&json!({
+                "name": name,
+                "capacity": capacity,
+                "start_date": start_date,
+                "end_date": end_date,
+            }))
+            .send()
+            .await
+            .map_err(|e| format!("Failed to create sprint: {}", e))?;
+
+        if !response.status().is_success() {
+            let error_text = response.text().await.unwrap_or_else(|_| "Unknown error".to_string());
+            return Err(format!("API error: {}", error_text));
+        }
+
+        let sprint: serde_json::Value = response.json().await
+            .map_err(|e| format!("Failed to parse response: {}", e))?;
+
+        let sprint_id = sprint["id"].as_str().unwrap_or("unknown");
+        let sprint_name = sprint["name"].as_str().unwrap_or("unknown");
+
+        Ok(format!(
+            "✅ Created sprint: {} (ID: {})\n\nCapacity: {} points\nStatus: planned\n\nUse add_ticket_to_sprint to add tickets.",
+            sprint_name,
+            sprint_id,
+            capacity.unwrap_or(0)
+        ))
+    }
+
+    /// Add tickets to a sprint
+    #[tool(
+        description = "Add one or more tickets to a sprint. Accepts ticket IDs or numbers (e.g., 'JIL-31')."
+    )]
+    pub async fn add_ticket_to_sprint(
+        &self,
+        #[tool(param)] sprint_id: String,
+        #[tool(param)] ticket_ids: Vec<String>,
+    ) -> Result<String, String> {
+        let url = format!("{}/sprints/{}/tickets", self.api_base_url, sprint_id);
+
+        let mut added = Vec::new();
+        let mut failed = Vec::new();
+
+        for ticket_id in ticket_ids {
+            let response = self.build_request(
+                reqwest::Method::POST,
+                url.clone()
+            )
+                .json(&json!({
+                    "ticket_id": ticket_id,
+                }))
+                .send()
+                .await;
+
+            match response {
+                Ok(resp) if resp.status().is_success() => added.push(ticket_id.clone()),
+                Ok(resp) => {
+                    let err = resp.text().await.unwrap_or_else(|_| "Unknown error".to_string());
+                    failed.push(format!("{}: {}", ticket_id, err));
+                }
+                Err(e) => failed.push(format!("{}: {}", ticket_id, e)),
+            }
+        }
+
+        let mut result = String::new();
+        if !added.is_empty() {
+            result.push_str(&format!("✅ Added {} ticket(s) to sprint:\n", added.len()));
+            for id in added {
+                result.push_str(&format!("  - {}\n", id));
+            }
+        }
+        if !failed.is_empty() {
+            result.push_str(&format!("\n❌ Failed to add {} ticket(s):\n", failed.len()));
+            for err in failed {
+                result.push_str(&format!("  - {}\n", err));
+            }
+        }
+
+        Ok(result)
+    }
+
+    /// Start a sprint
+    #[tool(
+        description = "Start a planned sprint. Moves sprint from 'planned' to 'active' status."
+    )]
+    pub async fn start_sprint(
+        &self,
+        #[tool(param)] sprint_id: String,
+    ) -> Result<String, String> {
+        let url = format!("{}/sprints/{}/start", self.api_base_url, sprint_id);
+
+        let response = self.build_request(
+            reqwest::Method::POST,
+            url
+        )
+            .send()
+            .await
+            .map_err(|e| format!("Failed to start sprint: {}", e))?;
+
+        if !response.status().is_success() {
+            let error_text = response.text().await.unwrap_or_else(|_| "Unknown error".to_string());
+            return Err(format!("API error: {}", error_text));
+        }
+
+        let sprint: serde_json::Value = response.json().await
+            .map_err(|e| format!("Failed to parse response: {}", e))?;
+
+        let sprint_name = sprint["name"].as_str().unwrap_or("unknown");
+
+        Ok(format!("🏃 Started sprint: {}\n\nStatus: active\n\nUse get_sprint_stats to track progress.", sprint_name))
+    }
+
+    /// List sprints
+    #[tool(
+        description = "List all sprints with optional status filter. Shows sprint name, status, capacity, and ticket count."
+    )]
+    pub async fn list_sprints(
+        &self,
+        #[tool(param)] status: Option<String>,
+    ) -> Result<String, String> {
+        let mut url = format!("{}/projects/{}/sprints", self.api_base_url, self.project_id);
+
+        if let Some(status_filter) = status {
+            url.push_str(&format!("?status={}", status_filter));
+        }
+
+        let response = self.build_request(
+            reqwest::Method::GET,
+            url
+        )
+            .send()
+            .await
+            .map_err(|e| format!("Failed to list sprints: {}", e))?;
+
+        if !response.status().is_success() {
+            let error_text = response.text().await.unwrap_or_else(|_| "Unknown error".to_string());
+            return Err(format!("API error: {}", error_text));
+        }
+
+        let sprints: Vec<serde_json::Value> = response.json().await
+            .map_err(|e| format!("Failed to parse response: {}", e))?;
+
+        if sprints.is_empty() {
+            return Ok("📋 No sprints found".to_string());
+        }
+
+        let mut result = format!("📋 Found {} sprint(s)\n\n", sprints.len());
+
+        for sprint in sprints {
+            let name = sprint["name"].as_str().unwrap_or("unknown");
+            let status = sprint["status"].as_str().unwrap_or("unknown");
+            let capacity = sprint["capacity"].as_i64().unwrap_or(0);
+            let ticket_count = sprint["ticket_count"].as_i64().unwrap_or(0);
+
+            let status_emoji = match status {
+                "active" => "🏃",
+                "planned" => "📋",
+                "completed" => "✅",
+                _ => "❓",
+            };
+
+            result.push_str(&format!(
+                "{} {}\n  Status: {} | Capacity: {} pts | Tickets: {}\n\n",
+                status_emoji, name, status, capacity, ticket_count
+            ));
+        }
+
+        Ok(result)
+    }
+
+    /// Get sprint statistics
+    #[tool(
+        description = "Get detailed statistics for a sprint including points breakdown and ticket status."
+    )]
+    pub async fn get_sprint_stats(
+        &self,
+        #[tool(param)] sprint_id: String,
+    ) -> Result<String, String> {
+        let url = format!("{}/sprints/{}/stats", self.api_base_url, sprint_id);
+
+        let response = self.build_request(
+            reqwest::Method::GET,
+            url
+        )
+            .send()
+            .await
+            .map_err(|e| format!("Failed to get sprint stats: {}", e))?;
+
+        if !response.status().is_success() {
+            let error_text = response.text().await.unwrap_or_else(|_| "Unknown error".to_string());
+            return Err(format!("API error: {}", error_text));
+        }
+
+        let stats: serde_json::Value = response.json().await
+            .map_err(|e| format!("Failed to parse response: {}", e))?;
+
+        let sprint_name = stats["sprint"]["name"].as_str().unwrap_or("unknown");
+        let capacity = stats["capacity"].as_i64().unwrap_or(0);
+        let total_points = stats["total_points"].as_i64().unwrap_or(0);
+        let completed_points = stats["completed_points"].as_i64().unwrap_or(0);
+        let total_tickets = stats["total_tickets"].as_i64().unwrap_or(0);
+        let completed_tickets = stats["completed_tickets"].as_i64().unwrap_or(0);
+
+        let completion_pct = if total_points > 0 {
+            (completed_points * 100) / total_points
+        } else {
+            0
+        };
+
+        Ok(format!(
+            "📊 Sprint Stats: {}\n\n\
+            Points: {}/{} ({} pts remaining)\n\
+            Tickets: {}/{} completed\n\
+            Completion: {}%\n\
+            Capacity: {} pts",
+            sprint_name,
+            completed_points, total_points, total_points - completed_points,
+            completed_tickets, total_tickets,
+            completion_pct,
+            capacity
+        ))
+    }
+
+    /// Complete a sprint
+    #[tool(
+        description = "Complete an active sprint. Moves remaining tickets to backlog and archives the sprint."
+    )]
+    pub async fn complete_sprint(
+        &self,
+        #[tool(param)] sprint_id: String,
+    ) -> Result<String, String> {
+        let url = format!("{}/sprints/{}/complete", self.api_base_url, sprint_id);
+
+        let response = self.build_request(
+            reqwest::Method::POST,
+            url
+        )
+            .send()
+            .await
+            .map_err(|e| format!("Failed to complete sprint: {}", e))?;
+
+        if !response.status().is_success() {
+            let error_text = response.text().await.unwrap_or_else(|_| "Unknown error".to_string());
+            return Err(format!("API error: {}", error_text));
+        }
+
+        let result: serde_json::Value = response.json().await
+            .map_err(|e| format!("Failed to parse response: {}", e))?;
+
+        let sprint_name = result["sprint"]["name"].as_str().unwrap_or("unknown");
+        let completed_tickets = result["completed_tickets"].as_i64().unwrap_or(0);
+        let incomplete_tickets = result["incomplete_tickets"].as_i64().unwrap_or(0);
+
+        Ok(format!(
+            "✅ Completed sprint: {}\n\n\
+            Completed tickets: {}\n\
+            Moved to backlog: {}\n\
+            Status: completed",
+            sprint_name, completed_tickets, incomplete_tickets
+        ))
+    }
 }
 
 // Use the tool_box! macro to generate list_tools and call_tool implementations
@@ -861,6 +1140,12 @@ tool_box!(JilityService {
     delete_ticket,
     create_epic,
     list_epics,
+    create_sprint,
+    add_ticket_to_sprint,
+    start_sprint,
+    list_sprints,
+    get_sprint_stats,
+    complete_sprint,
 });
 
 impl ServerHandler for JilityService {

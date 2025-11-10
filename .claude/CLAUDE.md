@@ -783,6 +783,61 @@ The Jility MCP server is configured in `.mcp.json` and provides the following to
 **Assigning Tickets to Epics:**
 When creating or updating tickets, use the `parent_epic_id` parameter to link tickets to epics. Use `mcp__jility__create_ticket()` with the `parent_epic_id` field or `mcp__jility__list_tickets()` with the `epic_id` filter.
 
+### Sprint Management
+
+- **`mcp__jility__create_sprint`** - Create a new sprint
+  - Parameters: `name`, `capacity`, `start_date`, `end_date`
+  - Returns: Sprint ID and details
+  - **Use case:** Plan a 2-week sprint with story point capacity
+
+- **`mcp__jility__add_ticket_to_sprint`** - Add tickets to a sprint
+  - Parameters: `sprint_id`, `ticket_ids` (array, supports batch)
+  - Accepts both UUID and ticket numbers (e.g., "JIL-31")
+  - **Use case:** Add multiple tickets to an active or planned sprint
+
+- **`mcp__jility__start_sprint`** - Start a planned sprint
+  - Parameters: `sprint_id`
+  - Moves sprint from 'planned' to 'active'
+  - **Use case:** Begin working on a sprint
+
+- **`mcp__jility__list_sprints`** - List all sprints
+  - Parameters: `status` (optional: 'active', 'planned', 'completed')
+  - Shows sprint stats and ticket counts
+  - **Use case:** View all active sprints or check sprint history
+
+- **`mcp__jility__get_sprint_stats`** - Get detailed sprint statistics
+  - Parameters: `sprint_id`
+  - Returns points breakdown, completion %, ticket status
+  - **Use case:** Track sprint progress in daily standup
+
+- **`mcp__jility__complete_sprint`** - Complete an active sprint
+  - Parameters: `sprint_id`
+  - Moves incomplete tickets to backlog
+  - **Use case:** Close sprint and archive completed work
+
+**Example Usage:**
+```typescript
+// Create sprint
+const sprint = await mcp__jility__create_sprint({
+  name: "Polish & Fix Sprint",
+  capacity: 21,
+  start_date: "2025-11-10",
+  end_date: "2025-11-24"
+})
+
+// Add tickets
+await mcp__jility__add_ticket_to_sprint(sprint_id, [
+  "JIL-31", "JIL-36", "JIL-48", "JIL-47", "JIL-46", "JIL-37", "JIL-42"
+])
+
+// Start sprint
+await mcp__jility__start_sprint(sprint_id)
+
+// Check progress
+await mcp__jility__get_sprint_stats(sprint_id)
+// Shows: "14/21 points complete (67%)"
+```
+
 ### Git Integration
 - **`mcp__jility__link_commit`** - Link a git commit to a ticket
   - Parameters: `ticket_id`, `commit_hash`, `commit_message`
