@@ -893,18 +893,18 @@ impl JilityService {
         #[tool(param)] sprint_id: String,
         #[tool(param)] ticket_ids: Vec<String>,
     ) -> Result<String, String> {
-        let url = format!("{}/sprints/{}/tickets", self.api_base_url, sprint_id);
-
         let mut added = Vec::new();
         let mut failed = Vec::new();
 
         for ticket_id in ticket_ids {
+            let url = format!("{}/sprints/{}/tickets/{}", self.api_base_url, sprint_id, ticket_id);
+
             let response = self.build_request(
                 reqwest::Method::POST,
-                url.clone()
+                url
             )
                 .json(&json!({
-                    "ticket_id": ticket_id,
+                    "added_by": "agent",
                 }))
                 .send()
                 .await;
