@@ -7,7 +7,8 @@ import { useProject } from '@/lib/project-context'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { MarkdownPreview } from '@/components/ui/markdown-preview'
 import { Textarea } from '@/components/ui/textarea'
-import type { TicketStatus } from '@/lib/types'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import type { TicketStatus, Epic } from '@/lib/types'
 
 interface CreateTicketDialogProps {
   open: boolean
@@ -21,6 +22,8 @@ export function CreateTicketDialog({ open, onClose, onCreated }: CreateTicketDia
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'write' | 'preview'>('write')
+  const [epics, setEpics] = useState<Epic[]>([])
+  const [epicId, setEpicId] = useState<string>('none')
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -36,6 +39,20 @@ export function CreateTicketDialog({ open, onClose, onCreated }: CreateTicketDia
     }
   }, [currentProject])
 
+  // Fetch epics when project changes
+  useEffect(() => {
+    const fetchEpics = async () => {
+      if (!currentProject?.id) return
+      try {
+        const epicsList = await api.listEpics(currentProject.id)
+        setEpics(epicsList)
+      } catch (error) {
+        console.error('Failed to fetch epics:', error)
+      }
+    }
+    fetchEpics()
+  }, [currentProject])
+
   // Reset form when dialog opens
   useEffect(() => {
     if (open) {
@@ -46,6 +63,7 @@ export function CreateTicketDialog({ open, onClose, onCreated }: CreateTicketDia
         story_points: undefined,
         project_id: currentProject?.id || '',
       })
+      setEpicId('none')
       setError(null)
       setActiveTab('write')
     }
@@ -57,7 +75,10 @@ export function CreateTicketDialog({ open, onClose, onCreated }: CreateTicketDia
     setError(null)
 
     try {
-      await api.createTicket(formData)
+      await api.createTicket({
+        ...formData,
+        epic_id: epicId === 'none' ? undefined : epicId,
+      })
 
       // Reset form state after successful creation
       setFormData({
@@ -67,6 +88,7 @@ export function CreateTicketDialog({ open, onClose, onCreated }: CreateTicketDia
         story_points: undefined,
         project_id: currentProject?.id || '',
       })
+      setEpicId('none')
 
       onCreated?.()
       onClose()
@@ -151,6 +173,31 @@ export function CreateTicketDialog({ open, onClose, onCreated }: CreateTicketDia
                 <option value="blocked">Blocked</option>
               </select>
             </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">Epic</label>
+            <Select value={epicId} onValueChange={setEpicId}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="None" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None</SelectItem>
+                {epics.map((epic) => (
+                  <SelectItem key={epic.id} value={epic.id}>
+                    <div className="flex items-center gap-2">
+                      {epic.epic_color && (
+                        <div
+                          className="w-3 h-3 rounded-full flex-shrink-0"
+                          style={{ backgroundColor: epic.epic_color }}
+                        />
+                      )}
+                      <span>JIL-{epic.number}: {epic.title}</span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {error && (

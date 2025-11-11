@@ -3,17 +3,20 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
-import type { TicketDetails, WorkspaceMember, WebSocketMessage } from '@/lib/types'
+import type { TicketDetails, WorkspaceMember, WebSocketMessage, Epic } from '@/lib/types'
 import { TicketHeader } from '@/components/ticket/ticket-header'
 import { TicketDescription } from '@/components/ticket/ticket-description'
 import { CommentsSection } from '@/components/ticket/comments-section'
 import { ActivityTimeline } from '@/components/ticket/activity-timeline'
 import { AssigneeSelector } from '@/components/ticket/assignee-selector'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/hooks/use-toast'
 import { useWebSocket } from '@/lib/websocket'
-import { ArrowLeft, Trash2 } from 'lucide-react'
+import { ArrowLeft, Trash2, Layers, Edit2, X, Check } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import Link from 'next/link'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,6 +41,10 @@ export default function TicketPage() {
   const [loading, setLoading] = useState(true)
   const [members, setMembers] = useState<WorkspaceMember[]>([])
   const [isLoadingMembers, setIsLoadingMembers] = useState(true)
+  const [epic, setEpic] = useState<Epic | null>(null)
+  const [epics, setEpics] = useState<Epic[]>([])
+  const [isEditingEpic, setIsEditingEpic] = useState(false)
+  const [selectedEpicId, setSelectedEpicId] = useState<string>('none')
 
   // WebSocket handler for real-time updates
   const handleWebSocketMessage = useCallback((message: WebSocketMessage) => {
@@ -71,10 +78,40 @@ export default function TicketPage() {
     }
   }, [slug])
 
+  useEffect(() => {
+    const loadEpics = async () => {
+      if (!ticketDetails?.ticket.project_id) return
+      try {
+        const epicsList = await api.listEpics(ticketDetails.ticket.project_id)
+        setEpics(epicsList)
+      } catch (error) {
+        console.error('Failed to load epics:', error)
+      }
+    }
+
+    if (ticketDetails?.ticket.project_id) {
+      loadEpics()
+    }
+  }, [ticketDetails?.ticket.project_id])
+
   const loadTicket = async () => {
     try {
       const data = await api.getTicket(ticketId)
       setTicketDetails(data)
+      setSelectedEpicId(data.ticket.epic_id || 'none')
+
+      // Fetch epic if ticket belongs to one
+      if (data.ticket.epic_id) {
+        try {
+          const epicData = await api.getEpic(data.ticket.epic_id)
+          setEpic(epicData)
+        } catch (error) {
+          console.error('Failed to load epic:', error)
+          setEpic(null)
+        }
+      } else {
+        setEpic(null)
+      }
     } catch (error) {
       console.error('Failed to load ticket:', error)
     } finally {
@@ -222,6 +259,27 @@ export default function TicketPage() {
     }
   }
 
+  const handleUpdateEpic = async () => {
+    try {
+      await api.updateTicket(ticketId, {
+        epic_id: selectedEpicId === 'none' ? undefined : selectedEpicId,
+      })
+      toast({
+        title: 'Epic updated',
+        description: 'The ticket epic has been updated successfully.',
+      })
+      await loadTicket()
+      setIsEditingEpic(false)
+    } catch (error) {
+      console.error('Failed to update epic:', error)
+      toast({
+        title: 'Failed to update epic',
+        description: 'Please try again',
+        variant: 'destructive',
+      })
+    }
+  }
+
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -251,11 +309,93 @@ export default function TicketPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">
-          <TicketHeader
-            ticket={ticketDetails.ticket}
-            onUpdateTitle={handleUpdateTitle}
-            onUpdateStoryPoints={handleUpdateStoryPoints}
-          />
+          <div>
+            <TicketHeader
+              ticket={ticketDetails.ticket}
+              onUpdateTitle={handleUpdateTitle}
+              onUpdateStoryPoints={handleUpdateStoryPoints}
+            />
+
+            {/* Epic Badge */}
+            <div className="mt-4">
+              {!isEditingEpic && epic && (
+                <div className="flex items-center gap-2">
+                  <Link href={`/w/${slug}/epic/${epic.id}`}>
+                    <Badge
+                      variant="outline"
+                      className="cursor-pointer hover:bg-accent"
+                      style={{ borderColor: epic.epic_color }}
+                    >
+                      <Layers className="h-3 w-3 mr-1" />
+                      JIL-{epic.number}: {epic.title}
+                    </Badge>
+                  </Link>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsEditingEpic(true)}
+                    className="h-6 px-2"
+                  >
+                    <Edit2 className="h-3 w-3" />
+                  </Button>
+                </div>
+              )}
+
+              {!isEditingEpic && !epic && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsEditingEpic(true)}
+                >
+                  <Layers className="h-4 w-4 mr-2" />
+                  Add to Epic
+                </Button>
+              )}
+
+              {isEditingEpic && (
+                <div className="flex items-center gap-2">
+                  <Select value={selectedEpicId} onValueChange={setSelectedEpicId}>
+                    <SelectTrigger className="w-[300px]">
+                      <SelectValue placeholder="Select epic" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
+                      {epics.map((e) => (
+                        <SelectItem key={e.id} value={e.id}>
+                          <div className="flex items-center gap-2">
+                            {e.epic_color && (
+                              <div
+                                className="w-3 h-3 rounded-full flex-shrink-0"
+                                style={{ backgroundColor: e.epic_color }}
+                              />
+                            )}
+                            <span>JIL-{e.number}: {e.title}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={handleUpdateEpic}
+                  >
+                    <Check className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setIsEditingEpic(false)
+                      setSelectedEpicId(ticketDetails.ticket.epic_id || 'none')
+                    }}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
 
           <div className="border-t border-border pt-4">
             <AssigneeSelector

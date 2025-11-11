@@ -14,6 +14,7 @@ export interface Ticket {
   created_by: string
   parent_id?: string
   epic_id?: string
+  project_id: string
 }
 
 export interface TicketReference {
