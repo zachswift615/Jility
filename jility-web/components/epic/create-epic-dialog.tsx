@@ -53,8 +53,19 @@ export function CreateEpicDialog({ isOpen, onClose, onEpicCreated, projectId }: 
         project_id: projectId,
       })
 
-      // Cast ticket to Epic type (it has is_epic: true)
-      const epic = ticket as unknown as Epic
+      // Build Epic object with progress (new epic has no tickets yet)
+      const epic: Epic = {
+        ...ticket,
+        is_epic: true,
+        progress: {
+          total: 0,
+          done: 0,
+          in_progress: 0,
+          todo: 0,
+          blocked: 0,
+          completion_percentage: 0,
+        },
+      }
 
       // Reset form
       setTitle('')
