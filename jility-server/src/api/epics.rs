@@ -1,6 +1,6 @@
-use axum::{extract::{Path, State}, Json};
+use axum::{extract::{Path, Query, State}, Json};
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::{
@@ -33,6 +33,12 @@ pub struct EpicProgress {
     pub todo: i32,
     pub blocked: i32,
     pub completion_percentage: i32,
+}
+
+/// Query parameters for listing epics
+#[derive(Debug, Deserialize)]
+pub struct ListEpicsQuery {
+    pub project_id: Option<String>,
 }
 
 /// Helper function to format ticket number with project key
@@ -99,10 +105,20 @@ async fn calculate_epic_progress(
 /// List all epics with progress stats
 pub async fn list_epics(
     State(state): State<AppState>,
+    Query(query): Query<ListEpicsQuery>,
 ) -> ApiResult<Json<Vec<EpicResponse>>> {
-    let epics = Ticket::find()
+    let mut find_query = Ticket::find()
         .filter(ticket::Column::IsEpic.eq(true))
-        .filter(ticket::Column::DeletedAt.is_null())
+        .filter(ticket::Column::DeletedAt.is_null());
+
+    // Filter by project_id if provided
+    if let Some(project_id_str) = query.project_id {
+        let project_uuid = Uuid::parse_str(&project_id_str)
+            .map_err(|_| ApiError::InvalidInput(format!("Invalid project ID: {}", project_id_str)))?;
+        find_query = find_query.filter(ticket::Column::ProjectId.eq(project_uuid));
+    }
+
+    let epics = find_query
         .all(state.db.as_ref())
         .await
         .map_err(ApiError::from)?;
