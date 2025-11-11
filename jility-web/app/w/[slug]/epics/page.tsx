@@ -8,6 +8,7 @@ import { CreateEpicDialog } from '@/components/epic/create-epic-dialog'
 import { Button } from '@/components/ui/button'
 import { withAuth } from '@/lib/with-auth'
 import { useProject } from '@/lib/project-context'
+import { api } from '@/lib/api'
 import type { Epic } from '@/lib/types'
 import { Layers, Plus } from 'lucide-react'
 
@@ -25,17 +26,8 @@ function EpicsPage() {
     const fetchEpics = async () => {
       try {
         setLoading(true)
-        const response = await fetch(
-          `/api/epics?project_id=${currentProject.id}`,
-          {
-            credentials: 'include',
-          }
-        )
-
-        if (response.ok) {
-          const data = await response.json()
-          setEpics(data)
-        }
+        const data = await api.listEpics(currentProject.id)
+        setEpics(data)
       } catch (error) {
         console.error('Failed to fetch epics:', error)
       } finally {
