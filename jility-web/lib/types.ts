@@ -105,6 +105,8 @@ export interface CreateTicketRequest {
   labels?: string[]
   parent_id?: string
   epic_id?: string
+  is_epic?: boolean
+  epic_color?: string
 }
 
 export interface UpdateTicketRequest {

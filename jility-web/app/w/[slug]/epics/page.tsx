@@ -4,10 +4,12 @@ import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import { EpicCard } from '@/components/epic-card'
 import { MobileFAB } from '@/components/layout/mobile-fab'
+import { CreateEpicDialog } from '@/components/epic/create-epic-dialog'
+import { Button } from '@/components/ui/button'
 import { withAuth } from '@/lib/with-auth'
 import { useProject } from '@/lib/project-context'
 import type { Epic } from '@/lib/types'
-import { Layers } from 'lucide-react'
+import { Layers, Plus } from 'lucide-react'
 
 function EpicsPage() {
   const params = useParams()
@@ -15,6 +17,7 @@ function EpicsPage() {
   const { currentProject } = useProject()
   const [epics, setEpics] = useState<Epic[]>([])
   const [loading, setLoading] = useState(true)
+  const [isCreateOpen, setIsCreateOpen] = useState(false)
 
   useEffect(() => {
     if (!currentProject?.id) return
@@ -43,6 +46,10 @@ function EpicsPage() {
     fetchEpics()
   }, [currentProject?.id])
 
+  const handleEpicCreated = (newEpic: Epic) => {
+    setEpics(prev => [newEpic, ...prev])
+  }
+
   if (loading) {
     return (
       <div className="container mx-auto px-3 md:px-6 py-6">
@@ -57,11 +64,20 @@ function EpicsPage() {
     <>
       <div className="container mx-auto px-3 md:px-6 py-6">
         {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-2xl md:text-3xl font-bold mb-2">Epics</h1>
-          <p className="text-sm md:text-base text-muted-foreground">
-            Track progress across large features and initiatives
-          </p>
+        <div className="mb-6 flex items-start justify-between">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold mb-2">Epics</h1>
+            <p className="text-sm md:text-base text-muted-foreground">
+              Track progress across large features and initiatives
+            </p>
+          </div>
+          <Button
+            onClick={() => setIsCreateOpen(true)}
+            className="hidden md:flex"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Create Epic
+          </Button>
         </div>
 
         {/* Epics Grid */}
@@ -84,10 +100,14 @@ function EpicsPage() {
         )}
       </div>
 
-      <MobileFAB onClick={() => {
-        // TODO: Open create epic dialog
-        console.log('Create epic')
-      }} />
+      <MobileFAB onClick={() => setIsCreateOpen(true)} />
+
+      <CreateEpicDialog
+        isOpen={isCreateOpen}
+        onClose={() => setIsCreateOpen(false)}
+        onEpicCreated={handleEpicCreated}
+        projectId={currentProject?.id || ''}
+      />
     </>
   )
 }
