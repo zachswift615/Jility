@@ -362,7 +362,8 @@ impl JilityService {
             .map_err(|e| format!("Failed to update description: {}", e))?;
 
         if !response.status().is_success() {
-            return Err("Failed to update description".to_string());
+            let error_text = response.text().await.unwrap_or_else(|_| "Unknown error".to_string());
+            return Err(format!("Failed to update description: {}", error_text));
         }
 
         Ok(format!(
@@ -422,7 +423,8 @@ impl JilityService {
             .map_err(|e| format!("Failed to add comment: {}", e))?;
 
         if !response.status().is_success() {
-            return Err("Failed to add comment".to_string());
+            let error_text = response.text().await.unwrap_or_else(|_| "Unknown error".to_string());
+            return Err(format!("Failed to add comment: {}", error_text));
         }
 
         Ok(format!("✅ Added comment to {}", ticket_id))

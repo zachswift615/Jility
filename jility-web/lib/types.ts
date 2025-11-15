@@ -128,7 +128,7 @@ export interface WebSocketMessage {
 
 export interface TicketFilters {
   project_id?: string
-  status?: TicketStatus
+  status?: TicketStatus | TicketStatus[]
   assignee?: string
 }
 

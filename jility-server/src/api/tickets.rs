@@ -40,8 +40,47 @@ async fn format_ticket_number(
 pub struct ListTicketsQuery {
     pub project_id: Option<String>,
     #[serde(default)]
+    #[serde(deserialize_with = "deserialize_string_or_vec")]
     pub status: Vec<String>,
     pub assignee: Option<String>,
+}
+
+// Helper to deserialize either a single string or a vec of strings
+fn deserialize_string_or_vec<'de, D>(deserializer: D) -> Result<Vec<String>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    use serde::de::{self, Deserialize};
+
+    struct StringOrVec;
+
+    impl<'de> de::Visitor<'de> for StringOrVec {
+        type Value = Vec<String>;
+
+        fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+            formatter.write_str("string or list of strings")
+        }
+
+        fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            Ok(vec![value.to_string()])
+        }
+
+        fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+        where
+            A: de::SeqAccess<'de>,
+        {
+            let mut vec = Vec::new();
+            while let Some(value) = seq.next_element()? {
+                vec.push(value);
+            }
+            Ok(vec)
+        }
+    }
+
+    deserializer.deserialize_any(StringOrVec)
 }
 
 pub async fn list_tickets(
@@ -615,10 +654,47 @@ pub async fn update_description(
     Path(id): Path<String>,
     Json(payload): Json<UpdateDescriptionRequest>,
 ) -> ApiResult<Json<TicketResponse>> {
-    let ticket_id = Uuid::parse_str(&id)
-        .map_err(|_| ApiError::InvalidInput(format!("Invalid ticket ID: {}", id)))?;
+    // Try to parse as UUID first
+    let ticket_uuid = if let Ok(ticket_id) = Uuid::parse_str(&id) {
+        ticket_id
+    } else {
+        // Parse PROJECT-NUMBER format (e.g., "JIL-31")
+        let parts: Vec<&str> = id.split('-').collect();
+        if parts.len() != 2 {
+            return Err(ApiError::InvalidInput(
+                format!("Invalid ticket ID format: {}. Use UUID or PROJECT-NUMBER (e.g., JIL-42)", id)
+            ));
+        }
 
-    let ticket = Ticket::find_by_id(ticket_id)
+        let project_key = parts[0];
+        let ticket_number: i32 = parts[1]
+            .parse()
+            .map_err(|_| ApiError::InvalidInput(format!("Invalid ticket number: {}", parts[1])))?;
+
+        // Find project by key
+        let project = Project::find()
+            .filter(project::Column::Key.eq(project_key))
+            .one(state.db.as_ref())
+            .await
+            .map_err(ApiError::from)?
+            .ok_or_else(|| ApiError::NotFound(format!("Project not found: {}", project_key)))?;
+
+        // Find ticket by number
+        let ticket = Ticket::find()
+            .filter(ticket::Column::ProjectId.eq(project.id))
+            .filter(ticket::Column::TicketNumber.eq(ticket_number))
+            .filter(ticket::Column::DeletedAt.is_null())
+            .one(state.db.as_ref())
+            .await
+            .map_err(ApiError::from)?
+            .ok_or_else(|| ApiError::NotFound(
+                format!("Ticket not found: {}-{}", project_key, ticket_number)
+            ))?;
+
+        ticket.id
+    };
+
+    let ticket = Ticket::find_by_id(ticket_uuid)
         .filter(ticket::Column::DeletedAt.is_null())
         .one(state.db.as_ref())
         .await
@@ -640,7 +716,7 @@ pub async fn update_description(
     // Record change
     let change = ticket_change::ActiveModel {
         id: Set(Uuid::new_v4()),
-        ticket_id: Set(ticket_id),
+        ticket_id: Set(ticket_uuid),
         change_type: Set(ChangeType::DescriptionChanged.as_str().to_string()),
         field_name: Set(Some("description".to_string())),
         old_value: Set(Some(old_description)),
@@ -656,7 +732,7 @@ pub async fn update_description(
 
     // Get assignees and labels
     let assignees = TicketAssignee::find()
-        .filter(ticket_assignee::Column::TicketId.eq(ticket_id))
+        .filter(ticket_assignee::Column::TicketId.eq(ticket_uuid))
         .all(state.db.as_ref())
         .await
         .map_err(ApiError::from)?
@@ -665,7 +741,7 @@ pub async fn update_description(
         .collect();
 
     let labels = TicketLabel::find()
-        .filter(ticket_label::Column::TicketId.eq(ticket_id))
+        .filter(ticket_label::Column::TicketId.eq(ticket_uuid))
         .all(state.db.as_ref())
         .await
         .map_err(ApiError::from)?

@@ -5,6 +5,7 @@ import { Plus, Info } from 'lucide-react'
 import { withAuth } from '@/lib/with-auth'
 import { useAuth } from '@/lib/auth-context'
 import { useWorkspace } from '@/lib/workspace-context'
+import { useProject } from '@/lib/project-context'
 import { api } from '@/lib/api'
 import { CreateSprintDialog } from '@/components/sprint/create-sprint-dialog'
 import { useSprintCapacity } from '@/lib/use-sprint-capacity'
@@ -20,6 +21,7 @@ function SprintPlanningContent() {
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const { user } = useAuth()
   const { currentWorkspace } = useWorkspace()
+  const { currentProject } = useProject()
   const slug = currentWorkspace?.slug || ''
 
   const fetchSprints = useCallback(async () => {
@@ -47,14 +49,17 @@ function SprintPlanningContent() {
   }, [])
 
   const fetchBacklogTickets = useCallback(async () => {
-    if (!slug) return
+    if (!currentProject) return
     try {
-      const data = await api.listTickets({ status: 'backlog' })
+      const data = await api.listTickets({
+        project_id: currentProject.id,
+        status: 'backlog'
+      })
       setBacklogTickets(data)
     } catch (error) {
       console.error('Failed to fetch backlog:', error)
     }
-  }, [slug])
+  }, [currentProject])
 
   useEffect(() => {
     fetchSprints()

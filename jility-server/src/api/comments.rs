@@ -78,8 +78,43 @@ pub async fn create_comment(
     Path(ticket_id): Path<String>,
     Json(payload): Json<CreateCommentRequest>,
 ) -> ApiResult<Json<CommentResponse>> {
-    let ticket_uuid = Uuid::parse_str(&ticket_id)
-        .map_err(|_| ApiError::InvalidInput(format!("Invalid ticket ID: {}", ticket_id)))?;
+    // Try to parse as UUID first
+    let ticket_uuid = if let Ok(uuid) = Uuid::parse_str(&ticket_id) {
+        uuid
+    } else {
+        // Try to parse as ticket number (e.g., "VOX-2" or "JIL-42")
+        let parts: Vec<&str> = ticket_id.split('-').collect();
+        if parts.len() != 2 {
+            return Err(ApiError::InvalidInput(format!(
+                "Invalid ticket identifier. Expected UUID or ticket number (e.g., VOX-2), got: {}",
+                ticket_id
+            )));
+        }
+
+        let project_key = parts[0];
+        let ticket_number: i32 = parts[1].parse()
+            .map_err(|_| ApiError::InvalidInput(format!("Invalid ticket number: {}", ticket_id)))?;
+
+        // Find project by key
+        let project = Project::find()
+            .filter(project::Column::Key.eq(project_key))
+            .one(state.db.as_ref())
+            .await
+            .map_err(ApiError::from)?
+            .ok_or_else(|| ApiError::NotFound(format!("Project not found with key: {}", project_key)))?;
+
+        // Find ticket by project_id and ticket_number
+        let ticket = Ticket::find()
+            .filter(ticket::Column::ProjectId.eq(project.id))
+            .filter(ticket::Column::TicketNumber.eq(ticket_number))
+            .filter(ticket::Column::DeletedAt.is_null())
+            .one(state.db.as_ref())
+            .await
+            .map_err(ApiError::from)?
+            .ok_or_else(|| ApiError::NotFound(format!("Ticket not found: {}", ticket_id)))?;
+
+        ticket.id
+    };
 
     let now = Utc::now();
     let comment = comment::ActiveModel {
@@ -107,7 +142,7 @@ pub async fn create_comment(
 
     // Broadcast WebSocket update
     let ws_message = serde_json::to_string(&crate::models::ServerMessage::CommentAdded {
-        ticket_id,
+        ticket_id: ticket_uuid.to_string(),
         comment: response.clone(),
     })
     .unwrap();

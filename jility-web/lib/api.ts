@@ -103,7 +103,11 @@ export const api = {
   listTickets: async (filters?: TicketFilters): Promise<Ticket[]> => {
     const params = new URLSearchParams()
     if (filters?.project_id) params.append('project_id', filters.project_id)
-    if (filters?.status) params.append('status', filters.status)
+    if (filters?.status) {
+      // Backend expects status as an array, so handle both string and array
+      const statuses = Array.isArray(filters.status) ? filters.status : [filters.status]
+      statuses.forEach(status => params.append('status', status))
+    }
     if (filters?.assignee) params.append('assignee', filters.assignee)
 
     const res = await fetch(`${API_BASE}/tickets?${params}`)
