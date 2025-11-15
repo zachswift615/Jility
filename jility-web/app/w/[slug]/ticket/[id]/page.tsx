@@ -3,12 +3,13 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
-import type { TicketDetails, WorkspaceMember, WebSocketMessage, Epic } from '@/lib/types'
+import type { TicketDetails, WorkspaceMember, WebSocketMessage, Epic, TicketStatus } from '@/lib/types'
 import { TicketHeader } from '@/components/ticket/ticket-header'
 import { TicketDescription } from '@/components/ticket/ticket-description'
 import { CommentsSection } from '@/components/ticket/comments-section'
 import { ActivityTimeline } from '@/components/ticket/activity-timeline'
 import { AssigneeSelector } from '@/components/ticket/assignee-selector'
+import { StatusSelector } from '@/components/ticket/status-selector'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/hooks/use-toast'
@@ -16,6 +17,7 @@ import { useWebSocket } from '@/lib/websocket'
 import { ArrowLeft, Trash2, Layers, Edit2, X, Check } from 'lucide-react'
 import { useAuth } from '@/lib/auth-context'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { getStatusLabel } from '@/lib/utils'
 import Link from 'next/link'
 import {
   AlertDialog,
@@ -280,6 +282,36 @@ export default function TicketPage() {
     }
   }
 
+  const handleStatusChange = async (newStatus: TicketStatus) => {
+    if (!ticketDetails) return
+
+    // Optimistic update
+    const previousStatus = ticketDetails.ticket.status
+    setTicketDetails({
+      ...ticketDetails,
+      ticket: { ...ticketDetails.ticket, status: newStatus },
+    })
+
+    try {
+      await api.updateTicketStatus(ticketId, newStatus)
+      toast({
+        title: `Status updated to ${getStatusLabel(newStatus)}`,
+      })
+      await loadTicket() // Refresh activity timeline
+    } catch (error) {
+      // Rollback on error
+      setTicketDetails({
+        ...ticketDetails,
+        ticket: { ...ticketDetails.ticket, status: previousStatus },
+      })
+      toast({
+        title: 'Failed to update status',
+        description: 'Please try again',
+        variant: 'destructive',
+      })
+    }
+  }
+
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -422,30 +454,35 @@ export default function TicketPage() {
         </div>
 
         <div className="space-y-8">
-          {/* Delete ticket button */}
+          {/* Status selector and delete button */}
           <div className="border-b border-border pb-4">
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive" size="sm" className="w-full">
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete Ticket
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will permanently delete ticket {ticketDetails.ticket.number}. This action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                    Delete
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+            <div className="flex items-center gap-2">
+              <StatusSelector
+                currentStatus={ticketDetails.ticket.status}
+                onStatusChange={handleStatusChange}
+              />
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" size="icon" title="Delete ticket">
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will permanently delete ticket {ticketDetails.ticket.number}. This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
           </div>
 
           <ActivityTimeline changes={ticketDetails.recent_changes} />
