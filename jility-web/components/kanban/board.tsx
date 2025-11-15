@@ -121,8 +121,28 @@ export function KanbanBoard({ filterFn, epics = [] }: KanbanBoardProps) {
       return
     }
 
+    // Check if dropped on itself (collision detection bug)
+    if (active.id === over.id) {
+      console.log('[DragEnd] Dropped on self, aborting')
+      return
+    }
+
     const ticketId = active.id as string
-    const newStatus = over.id as TicketStatus
+
+    // Check if over.id is a valid status or a ticket ID
+    let newStatus: TicketStatus
+    if (STATUSES.includes(over.id as TicketStatus)) {
+      // Dropped on column
+      newStatus = over.id as TicketStatus
+    } else {
+      // Dropped on a ticket - find that ticket's status
+      const targetTicket = tickets.find((t) => t.id === over.id)
+      if (!targetTicket) {
+        console.log('[DragEnd] Could not find target ticket, aborting')
+        return
+      }
+      newStatus = targetTicket.status
+    }
 
     const ticket = tickets.find((t) => t.id === ticketId)
     console.log('[DragEnd] Ticket:', ticket, 'New status:', newStatus)
