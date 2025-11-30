@@ -34,6 +34,7 @@ Jility combines:
 - **Activity transparency** - Full audit log showing who (human or agent) did what, when
 
 ### Intelligent Workflows
+- **AI-powered sprint planning** - Claude Code can create sprints, estimate capacity, add tickets, and track progress autonomously
 - **Epic support** - Organize tickets into epics with JIRA-like hierarchy and progress tracking
 - **Context bundling** - Agents get full ticket history, comments, dependencies, and guidance
 - **Smart decomposition** - Agents can split complex tickets into sub-tasks
@@ -41,7 +42,7 @@ Jility combines:
 - **Dependency tracking** - Automatic detection and management
 
 ### Developer Experience
-- **MCP tools** - 20+ tools for creating, updating, and managing tickets via Claude Code
+- **MCP tools** - 26+ tools for creating, updating, and managing tickets via Claude Code
 - **Precise editing** - Token-efficient line-based description updates via MCP
 - **Full activity log** - Complete history of ticket changes with timestamps and attribution
 - **Git integration** - Link commits to tickets for traceability
@@ -415,7 +416,5 @@ TBD (likely MIT or Apache 2.0)
 ---
 
 ## Contact
-
-Project maintainer: [Your details here]
 
 Built with ⚡ by developers tired of slow, expensive project management tools.
